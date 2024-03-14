@@ -1,6 +1,6 @@
 @testset "Correlator 1" begin
     # Read openqxd correlator
-    file_path = "test/data/correlator1.hdf5"
+    file_path = "data/correlator1.hdf5"
     corr = HDF5.h5read(file_path, "Correlator")
     Nₜ = size(corr)[1]
 
@@ -81,7 +81,7 @@ end
 
 @testset "Correlator 2" begin
     # Read openqxd correlator
-    file_path = "test/data/correlator2.hdf5"
+    file_path = "data/correlator2.hdf5"
     corr = HDF5.h5read(file_path, "Correlator")
     Nₜ, N_src, N_cnfg = size(corr)
 
