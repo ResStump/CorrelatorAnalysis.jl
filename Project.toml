@@ -1,6 +1,6 @@
 name = "CorrelatorAnalysis"
 uuid = "51dc7a32-bfba-47f5-8c7b-e9cc4ebff3e1"
-authors = ["stumpa01 <andres.stump@hu-berlin.de>"]
+authors = ["Andres Stump <andres.stump@hu-berlin.de>"]
 version = "0.1.0"
 
 [deps]
