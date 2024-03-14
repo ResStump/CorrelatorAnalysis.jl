@@ -60,7 +60,7 @@ function plot_autocorrelation(obs::AD.uwreal, mcid, N_cnfg_max=nothing; kargs...
     end
 
     # Horizontal line at zero
-    Plots.hline!([0], color=:black)
+    Plots.hline!([0], color=:black, label=nothing)
 
     return p
 end
