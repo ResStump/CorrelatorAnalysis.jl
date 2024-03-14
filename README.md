@@ -5,12 +5,12 @@ This is a analysis package to compute and propagate Markov Chain Monte Carlo err
 To install this package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.jl) has to be installed first. Then, you can install this package the following two ways in the julia Pkg mode.
 
 Using HTTPS
-```julia
+```
 (v1.10) pkg> add https://github.com/ResStump/CorrelatorAnalysis.git
 ```
 
 Using SSH
-```julia
+```
 (v1.10) pkg> add git@github.com:ResStump/CorrelatorAnalysis.git
 ```
 
