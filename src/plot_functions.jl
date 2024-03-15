@@ -72,14 +72,14 @@ function plot_effective_mass!(p::Plots.Plot, m_eff::Vector{AD.uwreal}; unit="lat
 
     # String that contains unit (empty if lattice units are used)
     if unit == "lattice"
-        unit_str = ""
+        ylabel = L"am_\mathrm{eff}(t)"
     else
-        unit_str = "[$unit]"
+        ylabel = L"$m_\mathrm{eff}(t)$ [%$unit]"
     end
 
     # Plot effective mass
     Nₜ = length(m_eff)
-    Plots.plot!(p, xlabel=L"t/a", ylabel=L"$m_\mathrm{eff}(t)$ %$unit_str", minorticks=true)
+    Plots.plot!(p, xlabel=L"t/a", ylabel=ylabel, minorticks=true)
     Plots.scatter!(p, 0:Nₜ-1, AD.value.(m_eff), yerror=AD.err.(m_eff),
                    label="Effective mass", markersize=2.5; kargs...)
 
