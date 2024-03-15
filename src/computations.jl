@@ -9,6 +9,19 @@ function err!(a::AD.uwreal)
     return a
 end
 
+function err!(a::AbstractArray{AD.uwreal})
+    for i in eachindex(a)
+        try
+            AD.uwerr(a[i], parms.wpm)
+        catch e
+            println("Failed to calculate error.")
+            println(e)
+        end
+    end
+
+    return a
+end
+
 function effective_mass(Cₜ::Vector{AD.uwreal}, variant=:log; guess=1.0, folded=false)
     # Compute error
     err!.(Cₜ)
