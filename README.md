@@ -1,4 +1,4 @@
-# CorrelatorAnalysis
+# CorrelatorAnalysis.jl
 This is a analysis package to compute and propagate Markov Chain Monte Carlo error of correlation functions. It is written in Julia and relies on the package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.jl).
 
 ## Installation
@@ -6,12 +6,12 @@ To install this package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.j
 
 Using HTTPS
 ```
-(v1.10) pkg> add https://github.com/ResStump/CorrelatorAnalysis.git
+(v1.10) pkg> add https://github.com/ResStump/CorrelatorAnalysis.jl.git
 ```
 
 Using SSH
 ```
-(v1.10) pkg> add git@github.com:ResStump/CorrelatorAnalysis.git
+(v1.10) pkg> add git@github.com:ResStump/CorrelatorAnalysis.jl.git
 ```
 
 ## Documentation
