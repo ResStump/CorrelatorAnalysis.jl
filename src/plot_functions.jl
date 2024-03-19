@@ -19,7 +19,7 @@ function plot_correlator!(p::Plots.Plot, Cₜ::Vector{AD.uwreal}; kargs...)
     corr_label = join(names, ", ")
 
     Nₜ = length(Cₜ)
-    Plots.plot!(p, yscale=:log, xlabel=L"t/a", ylabel=L"C(t)", legend=true,
+    Plots.plot!(p, yscale=:log10, xlabel=L"t/a", ylabel=L"C(t)", legend=true,
                 minorticks=true)
     Plots.scatter!(p, 0:Nₜ-1, Cₜ_values, yerror=Cₜ_err, label=corr_label,
                    markersize=2.5; kargs...)
