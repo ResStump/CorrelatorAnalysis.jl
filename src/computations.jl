@@ -66,7 +66,8 @@ function effective_mass(Cₜ::Vector{AD.uwreal}, variant=:log; guess=1.0, folded
     return m_eff
 end
 
-function fit(model, xdata::AbstractArray, ydata::Array{AD.uwreal}, p0::AbstractArray)
+function fit(model, xdata::AbstractArray, ydata::Array{AD.uwreal}, p0::AbstractArray;
+             chi_exp=true)
     # Compute error
     err!.(ydata)
 
@@ -84,9 +85,13 @@ function fit(model, xdata::AbstractArray, ydata::Array{AD.uwreal}, p0::AbstractA
         return sum(@. (d - model_ydata)^2 * W)
     end
 
-    fitp, cexp = AD.fit_error(Χ², fit_result.param, ydata_, parms.wpm)
-
-    return fitp, cexp
+    if chi_exp
+        fitp, cexp = AD.fit_error(Χ², fit_result.param, ydata_, parms.wpm, chi_exp=true)
+        return fitp, cexp
+    else
+        fitp = AD.fit_error(Χ², fit_result.param, ydata_, parms.wpm, chi_exp=false)
+        return fitp
+    end
 end
 
 function fit_plateau(m_eff::Vector{AD.uwreal}, plateau_range; guess=1.0, chi_exp=false)
@@ -97,12 +102,13 @@ function fit_plateau(m_eff::Vector{AD.uwreal}, plateau_range; guess=1.0, chi_exp
     ydata = m_eff[xdata.+1]
     p0 = [guess]
 
-    fitp, cexp = fit(model, xdata, ydata, p0)
-    m = fitp[1]
-
     if chi_exp
+        fitp, cexp = fit(model, xdata, ydata, p0, chi_exp=true)
+        m = fitp[1]
         return m, cexp
     else
+        fitp = fit(model, xdata, ydata, p0, chi_exp=false)
+        m = fitp[1]
         return m
     end
 end
