@@ -22,7 +22,8 @@ function err!(a::AbstractArray{AD.uwreal})
     return a
 end
 
-function effective_mass(Cₜ::Vector{AD.uwreal}, variant=:log; guess=1.0, folded=false)
+function effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0,
+                        folded=false)
     # Compute error
     err!.(Cₜ)
 
@@ -66,7 +67,7 @@ function effective_mass(Cₜ::Vector{AD.uwreal}, variant=:log; guess=1.0, folded
     return m_eff
 end
 
-function fit(model, xdata::AbstractArray, ydata::Array{AD.uwreal}, p0::AbstractArray;
+function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::AbstractArray;
              chi_exp=true)
     # Compute error
     err!.(ydata)
@@ -94,7 +95,8 @@ function fit(model, xdata::AbstractArray, ydata::Array{AD.uwreal}, p0::AbstractA
     end
 end
 
-function fit_plateau(m_eff::Vector{AD.uwreal}, plateau_range; guess=1.0, chi_exp=false)
+function fit_plateau(m_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0,
+                     chi_exp=false)
     # Fit to effective mass
     model(x, p) = @. p[1] + 0*x
     

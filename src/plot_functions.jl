@@ -1,4 +1,4 @@
-function plot_correlator!(p::Plots.Plot, Cₜ::Vector{AD.uwreal}; kargs...)
+function plot_correlator!(p::Plots.Plot, Cₜ::AbstractVector{AD.uwreal}; kargs...)
     # Compute error
     err!.(Cₜ)
 
@@ -26,9 +26,9 @@ function plot_correlator!(p::Plots.Plot, Cₜ::Vector{AD.uwreal}; kargs...)
 
     return p
 end
-plot_correlator(Cₜ::Vector{AD.uwreal}; kargs...) = 
+plot_correlator(Cₜ::AbstractVector{AD.uwreal}; kargs...) = 
     plot_correlator!(Plots.plot(), Cₜ; kargs...)
-plot_correlator!(Cₜ::Vector{AD.uwreal}; kargs...) = 
+plot_correlator!(Cₜ::AbstractVector{AD.uwreal}; kargs...) = 
     plot_correlator!(Plots.plot!(), Cₜ; kargs...)
 
 function plot_autocorrelation(obs::AD.uwreal, mcid, N_cnfg_max=nothing; kargs...)
@@ -65,8 +65,8 @@ function plot_autocorrelation(obs::AD.uwreal, mcid, N_cnfg_max=nothing; kargs...
     return p
 end
 
-function plot_effective_mass!(p::Plots.Plot, m_eff::Vector{AD.uwreal}; unit="lattice",
-                              kargs...)
+function plot_effective_mass!(p::Plots.Plot, m_eff::AbstractVector{AD.uwreal};
+                              unit="lattice", kargs...)
     # Compute error
     err!.(m_eff)
 
@@ -85,9 +85,9 @@ function plot_effective_mass!(p::Plots.Plot, m_eff::Vector{AD.uwreal}; unit="lat
 
     return p
 end
-plot_effective_mass(m_eff::Vector{AD.uwreal}; kargs...) = 
+plot_effective_mass(m_eff::AbstractVector{AD.uwreal}; kargs...) = 
     plot_effective_mass!(Plots.plot(), m_eff; kargs...)
-plot_effective_mass!(m_eff::Vector{AD.uwreal}; kargs...) = 
+plot_effective_mass!(m_eff::AbstractVector{AD.uwreal}; kargs...) = 
     plot_effective_mass!(Plots.plot!(), m_eff; kargs...)
 
 # Helper function

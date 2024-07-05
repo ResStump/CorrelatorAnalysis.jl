@@ -2,18 +2,18 @@
 Base.abs(a::AD.uwreal) = a*sign(AD.value(a))
 
 for op in (:+, :-, :*, :/, :^, :atan, :hypot)
-    @eval function Base.$op(a::Array{AD.uwreal}, b::AD.uwreal)
+    @eval function Base.$op(a::AbstractArray{AD.uwreal}, b::AD.uwreal)
         r = similar(a)
-        @inbounds for i in 1:length(a)
+        @inbounds for i in eachindex(a)
             r[i] = Base.$op(a[i], b)
         end
         
         return r
     end
 
-    @eval function Base.$op(a::AD.uwreal, b::Array{AD.uwreal})
+    @eval function Base.$op(a::AD.uwreal, b::AbstractArray{AD.uwreal})
         r = similar(b)
-        @inbounds for i in 1:length(b)
+        @inbounds for i in eachindex(b)
             r[i] = Base.$op(a, b[i])
         end
         
@@ -53,7 +53,7 @@ function uwreal_array(data::AbstractArray, mcid, window=:auto, mc_dim=:last;
     return uwdata
 end
 
-function fold_correlator(Cₜ::Vector{AD.uwreal})
+function fold_correlator(Cₜ::AbstractVector{AD.uwreal})
     Nₜ = length(Cₜ)
     Cₜ_folded = Cₜ[1:Nₜ÷2+1]
     Cₜ_folded[2:Nₜ÷2] = 0.5*(Cₜ_folded[2:Nₜ÷2] + Cₜ[Nₜ:-1:Nₜ÷2+2])
