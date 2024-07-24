@@ -6,12 +6,12 @@ To install this package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.j
 
 Using HTTPS
 ```
-(v1.10) pkg> add https://github.com/ResStump/CorrelatorAnalysis.jl.git
+(v1.10) pkg> add https://github.com/ResStump/CorrelatorAnalysis.jl
 ```
 
 Using SSH
 ```
-(v1.10) pkg> add git@github.com:ResStump/CorrelatorAnalysis.jl.git
+(v1.10) pkg> add git@github.com:ResStump/CorrelatorAnalysis.jl
 ```
 
 ## Documentation
