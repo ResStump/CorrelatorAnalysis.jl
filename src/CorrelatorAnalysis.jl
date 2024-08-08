@@ -1,6 +1,7 @@
 module CorrelatorAnalysis
 
 import ADerrors as AD
+import LinearAlgebra as LA
 import LsqFit
 import Plots
 import Statistics as Stats

@@ -22,6 +22,38 @@ function err!(a::AbstractArray{AD.uwreal})
     return a
 end
 
+function cov(a::AbstractVector{AD.uwreal})
+    # Compute covariance matrix using the set window parameters wpm
+    # This changes the error in `a` therfore compute it again using err!
+    cov = AD.cov(a, parms.wpm)
+
+    err!(a)
+
+    return cov
+end
+
+function posdef_cov(a::AbstractVector{AD.uwreal})
+    # Generate window parameters with window 1 (i.e. no autocorrelation)
+    wpm = deepcopy(parms.wpm)
+    for k in keys(wpm)
+        wpm[k] = [1.0, -1.0, -1.0, -1.0]
+    end
+
+    # Get correlation matrix without autocorrelation (changes error in `a`!)
+    cov0 = AD.cov(a, wpm)
+
+    # Compute error of `a` including autocorrelation
+    err!.(a)
+
+    # Compute offdiagonal correlator matrix entries by assuming the integrated
+    # autocorrelation time τ_ij of entrie [i, j] is the geometric mean of the
+    # autocorrelation time of the observables `a[i]` and `a[j]`, i.e. τ_ij = √(τ_i*τ_j).
+    # This results in a positive definite correlation matrix.
+    autocorr_correction = AD.err.(a) ./ .√LA.diag(cov0)
+    
+    return LA.diagm(autocorr_correction) * cov0 * LA.diagm(autocorr_correction)
+end
+
 function effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0,
                         folded=false)
     # Compute error
@@ -67,8 +99,8 @@ function effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0
     return m_eff
 end
 
-function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::AbstractArray;
-             chi_exp=true)
+function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
+             p0::AbstractArray; chi_exp=true, correlated_fit=true)
     # Compute error
     err!.(ydata)
 
@@ -76,14 +108,22 @@ function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::A
     valid_indices = isfinite.(AD.value.(ydata))
     xdata_ = xdata[valid_indices]
     ydata_ = ydata[valid_indices]
-    W = @. 1/AD.err(ydata_)^2
+
+    # Set weights
+    if correlated_fit
+        W = inv(posdef_cov(ydata_))
+        W = 0.5*(W + W')
+    else
+        # Diag matrix of inverse of variance
+        W = LA.diagm(@. 1/AD.err(ydata_)^2)
+    end
 
     fit_result = LsqFit.curve_fit(model, xdata_, AD.value.(ydata_), W, p0)
 
-    # Χ² function
+    # Χ² function for propagating error to fit parameters
     function Χ²(p, d)
         model_ydata = model(xdata_, p)
-        return sum(@. (d - model_ydata)^2 * W)
+        return (d - model_ydata)' * W * (d - model_ydata)
     end
 
     if chi_exp
@@ -96,7 +136,7 @@ function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::A
 end
 
 function fit_plateau(m_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0,
-                     chi_exp=false)
+                     chi_exp=false, kargs...)
     # Fit to effective mass
     model(x, p) = @. p[1] + 0*x
     
@@ -105,11 +145,11 @@ function fit_plateau(m_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0,
     p0 = [guess]
 
     if chi_exp
-        fitp, cexp = fit(model, xdata, ydata, p0, chi_exp=true)
+        fitp, cexp = fit(model, xdata, ydata, p0; chi_exp=true, kargs...)
         m = fitp[1]
         return m, cexp
     else
-        fitp = fit(model, xdata, ydata, p0, chi_exp=false)
+        fitp = fit(model, xdata, ydata, p0; chi_exp=false, kargs...)
         m = fitp[1]
         return m
     end
