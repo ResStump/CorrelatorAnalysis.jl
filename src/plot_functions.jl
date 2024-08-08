@@ -1,4 +1,4 @@
-function plot_correlator!(p::Plots.Plot, Cₜ::AbstractVector{AD.uwreal}; kargs...)
+function plot_correlator!(p::Plots.Plot, Cₜ::AbstractVector{AD.uwreal}; t_shift=0, kargs...)
     # Compute error
     err!.(Cₜ)
 
@@ -19,9 +19,10 @@ function plot_correlator!(p::Plots.Plot, Cₜ::AbstractVector{AD.uwreal}; kargs.
     corr_label = join(names, ", ")
 
     Nₜ = length(Cₜ)
+    t_arr = (0:Nₜ-1) .+ t_shift
     Plots.plot!(p, yscale=:log10, xlabel=L"t/a", ylabel=L"C(t)", legend=true,
                 minorticks=true)
-    Plots.scatter!(p, 0:Nₜ-1, Cₜ_values, yerror=Cₜ_err, label=corr_label,
+    Plots.scatter!(p, t_arr, Cₜ_values, yerror=Cₜ_err, label=corr_label,
                    markersize=2.5; kargs...)
 
     return p
@@ -66,7 +67,7 @@ function plot_autocorrelation(obs::AD.uwreal, mcid, N_cnfg_max=nothing; kargs...
 end
 
 function plot_effective_mass!(p::Plots.Plot, m_eff::AbstractVector{AD.uwreal};
-                              unit="lattice", kargs...)
+                              unit="lattice", t_shift=0, kargs...)
     # Compute error
     err!.(m_eff)
 
@@ -79,8 +80,9 @@ function plot_effective_mass!(p::Plots.Plot, m_eff::AbstractVector{AD.uwreal};
 
     # Plot effective mass
     Nₜ = length(m_eff)
+    t_arr = (0:Nₜ-1) .+ t_shift
     Plots.plot!(p, xlabel=L"t/a", ylabel=ylabel, minorticks=true)
-    Plots.scatter!(p, 0:Nₜ-1, AD.value.(m_eff), yerror=AD.err.(m_eff),
+    Plots.scatter!(p, t_arr, AD.value.(m_eff), yerror=AD.err.(m_eff),
                    label="Effective mass", markersize=2.5; kargs...)
 
     return p
