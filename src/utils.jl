@@ -21,7 +21,17 @@ for op in (:+, :-, :*, :/, :^, :atan, :hypot)
     end
 end
 
-function uwreal_array(data::AbstractArray, mcid, window=:auto, mc_dim=:last;
+@doc raw"""
+    uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last; S=2.0, calc_err=true) -> uwdata
+
+Create an array of `AD.uwreal` objects from the input `data` array which is assumed to have
+the Monte Carlo (MC) time in the last dimension (default) or in dimension `mc_dim`. Specify
+an unique label `mcid` for the ensemble. The `window` parameter specifies the summation
+window in the Γ-method (`window=1` means autocorrelation is neglected). If it's set to
+`:auto` Ulli Wolff's automatic windowing procedure with the parameter given parameter `S`
+(default is 2.0) is used.
+"""
+function uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last;
                       S=2.0, calc_err=true)
     # Add mcid to parms
     add_mcid_to_parms!(mcid, window, S=S)
@@ -53,6 +63,12 @@ function uwreal_array(data::AbstractArray, mcid, window=:auto, mc_dim=:last;
     return uwdata
 end
 
+@doc raw"""
+    fold_correlator(Cₜ::AbstractVector{AD.uwreal}) -> Cₜ_folded::Vector{AD.uwreal}
+
+Fold the correlator `Cₜ` by averaging the entries `Cₜ[i]` and `Cₜ[Nₜ-i]` for `i in 2:Nₜ/2`
+where `Nₜ` is the length of `Cₜ`. The entries `Cₜ[1]` and `Cₜ[Nₜ/2+1]` are left unchanged.
+"""
 function fold_correlator(Cₜ::AbstractVector{AD.uwreal})
     Nₜ = length(Cₜ)
     Cₜ_folded = Cₜ[1:Nₜ÷2+1]
@@ -61,6 +77,14 @@ function fold_correlator(Cₜ::AbstractVector{AD.uwreal})
     return Cₜ_folded
 end
 
+@doc raw"""
+    markov_chain(rng, N::Integer, μ::Real, σ::Real, τ::Real) -> uwdata::Vector{AD.uwreal}
+    markov_chain(N::Integer, μ::Real, σ::Real, τ::Real) -> uwdata::Vector{AD.uwreal}
+
+Generate a Markov chain of lenght `N` with mean `μ` and error `σ`
+(including autocorrelation) and an integrated autocorrelation time `τ`. Optionally provide
+a random number generator rng from the `Random` library.
+"""
 function markov_chain(rng, N::Integer, μ::Real, σ::Real, τ::Real)
     decay = exp(-1/τ)
 
