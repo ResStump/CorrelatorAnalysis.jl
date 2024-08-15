@@ -8,6 +8,17 @@ end
 parms = Parms()
 
 
+@doc raw"""
+    add_mcid_to_parms!(mcid::String, window=:auto; S=2.0)
+
+For the ensemble with label `mcid` add a "window parameter" entry to the global window
+parameters `parms.wpm`. The `window` argument specifies the summation window for the
+Γ-method that is used to compute the error for this ensemble (`window=1` means
+autocorrelation is neglected) . If it's set to `:auto` Ulli Wolff's automatic windowing
+procedure with the given parameter `S` (default is 2.0) is used.
+
+If the id `mcid` exists already it is overwritten.
+"""
 function add_mcid_to_parms!(mcid::String, window=:auto; S=2.0)
     # Check if wpm dict is already defined
     if !isdefined(parms, :wpm)
@@ -24,5 +35,6 @@ function add_mcid_to_parms!(mcid::String, window=:auto; S=2.0)
 end
 
 # Useful constants
+"""Reduced Plank constant times speed of light in MeV*fm"""
 ħc = (PCC18.c_0*PCC18.ħ/PCC18.e*1e9).val # MeV*fm
 
