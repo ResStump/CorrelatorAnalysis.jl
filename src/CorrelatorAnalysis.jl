@@ -5,7 +5,10 @@ import LinearAlgebra as LA
 import LsqFit
 import Plots
 import Statistics as Stats
+import SpecialFunctions as SF
+import ForwardDiff as FD
 import Random
+import BDIO
 import PhysicalConstants.CODATA2018 as PCC18
 using LaTeXStrings
 import PrecompileTools
@@ -18,6 +21,7 @@ export plot_effective_mass!, plot_effective_mass
 export plot_error_rectangle!, plot_error_rectangle, plot_model!, plot_model
 
 include("parms.jl")
+include("IO.jl")
 include("utils.jl")
 include("computations.jl")
 include("plot_functions.jl")
