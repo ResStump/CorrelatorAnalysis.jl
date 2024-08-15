@@ -1,7 +1,8 @@
 @testset "utils test" begin
     # Generate MC ensemble
+    rng = Random.MersenneTwister(12)
     N, N_mc = 64, 1000
-    eta  = randn(N_mc);
+    eta  = randn(rng, N_mc);
     x = Array{Float64}(undef, N, N_mc)
 
     # Random walk in [-1, 1]
