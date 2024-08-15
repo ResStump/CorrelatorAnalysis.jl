@@ -93,7 +93,8 @@ PrecompileTools.@compile_workload begin
 
     # Constant fit to plateau
     plateau_range = [2, 6]
-    am = fit_plateau(am_eff, plateau_range)
+    fit_result = fit_plateau(am_eff, plateau_range)
+    am = fit_result.param[1]
     err!(am)
 
     # Fit to correlator
@@ -103,7 +104,7 @@ PrecompileTools.@compile_workload begin
     ydata = Cₜ[xdata.+1]
 
     p0 = [5e-3, 0.11]
-    (A, am_fit), cexp = fit(corr_model, xdata, ydata, p0)
+    fit_result = fit(corr_model, xdata, ydata, p0)
 
     # Plot function calls
     plot_correlator(Cₜ)
