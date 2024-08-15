@@ -22,13 +22,13 @@ for op in (:+, :-, :*, :/, :^, :atan, :hypot)
 end
 
 @doc raw"""
-    uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last; S=2.0, calc_err=true) -> uwdata
+    uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last; S=2.0, calc_err=true) -> uwdata::Array{AD.uwreal}
 
 Create an array of `AD.uwreal` objects from the input `data` array which is assumed to have
 the Monte Carlo (MC) time in the last dimension (default) or in dimension `mc_dim`. Specify
 an unique label `mcid` for the ensemble. The `window` parameter specifies the summation
-window in the Γ-method (`window=1` means autocorrelation is neglected). If it's set to
-`:auto` Ulli Wolff's automatic windowing procedure with the parameter given parameter `S`
+window for the Γ-method (`window=1` means autocorrelation is neglected). If it's set to
+`:auto` Ulli Wolff's automatic windowing procedure with the given parameter `S`
 (default is 2.0) is used.
 """
 function uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last;
