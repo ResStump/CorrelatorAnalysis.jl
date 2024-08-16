@@ -2,7 +2,7 @@
 This is a analysis package to compute and propagate Markov Chain Monte Carlo error of correlation functions. It is written in Julia and relies on the package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.jl).
 
 ## Installation
-To install this package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.jl) has to be installed first. Then, you can install this package the following two ways in the julia Pkg mode.
+To install this package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.jl) has to be installed first. Then, you can install it the following two ways in the julia Pkg mode.
 
 Using HTTPS
 ```
