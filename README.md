@@ -6,13 +6,22 @@ To install this package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.j
 
 Using HTTPS
 ```
-(v1.10) pkg> add https://github.com/ResStump/CorrelatorAnalysis.jl
+pkg> add https://github.com/ResStump/CorrelatorAnalysis.jl
 ```
 
 Using SSH
 ```
-(v1.10) pkg> add git@github.com:ResStump/CorrelatorAnalysis.jl
+pkg> add git@github.com:ResStump/CorrelatorAnalysis.jl
 ```
 
 ## Documentation
-Doc strings will be added to the functions at some point in the future.
+Documentation is provided in the doc strings of the functions.
+
+
+## Examples
+
+The folder `examples` contains Jupyter notebooks which show the basic functionalities of `CorrelatorAnalysis`.
+
+The notebook `correlator_analysis_random.ipynb` shows the error analysis of a randomly generated meson like correlator with autocorrelation.
+
+The notebook `correlator_analysis.ipynb` repeats the same thing for actual data of a pion correlator.
