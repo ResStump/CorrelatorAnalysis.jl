@@ -14,6 +14,28 @@
     # Create uwreal array
     uwarr = CA.uwreal_array(samples, "MC ensemble", :auto)
 
+    # Write and read single AD.uwreal object
+    CA.write_uwreal("test.bdio", uwarr[1])
+    a_read = CA.err!(CA.read_uwreal("test.bdio"))
+    @test AD.value(a_read) ≈ AD.value(uwarr[1])
+    @test AD.err(a_read) ≈ AD.err(uwarr[1])
+
+    # Write and read AD.uwreal array
+    CA.write_uwreal("test.bdio", uwarr)
+    uwarr_read = CA.err!(CA.read_uwreal("test.bdio"))
+    @test AD.value.(uwarr_read) ≈ AD.value.(uwarr)
+    @test AD.err.(uwarr_read) ≈ AD.err.(uwarr)
+
+    # Write and read AD.uwreal array with reshaped data
+    shape = (2, 5)
+    CA.write_uwreal("test.bdio", reshape(uwarr, shape))
+    uwarr_read = CA.err!(CA.read_uwreal("test.bdio"))
+    @test AD.value.(uwarr_read) ≈ AD.value.(reshape(uwarr, shape))
+    @test AD.err.(uwarr_read) ≈ AD.err.(reshape(uwarr, shape))
+
+    rm("test.bdio")
+
+    
     # Test if CA.export_samples propagats delta exactly under an affine transformation
     A = rand(N, N)
     b = rand(N)
