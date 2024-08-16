@@ -24,4 +24,4 @@ The folder `examples` contains Jupyter notebooks which show the basic functional
 
 The notebook `correlator_analysis_random.ipynb` shows the error analysis of a randomly generated meson like correlator with autocorrelation.
 
-The notebook `correlator_analysis.ipynb` repeats the same thing for actual data of a pion correlator.
+The notebook `correlator_analysis.ipynb` repeats the same analysis for actual data of a pion correlator.
