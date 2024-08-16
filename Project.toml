@@ -1,11 +1,12 @@
 name = "CorrelatorAnalysis"
 uuid = "51dc7a32-bfba-47f5-8c7b-e9cc4ebff3e1"
 authors = ["Andres Stump <andres.stump@hu-berlin.de>"]
-version = "0.3.0"
+version = "0.4.0"
 
 [deps]
 ADerrors = "5e92007d-7bf1-471c-8ceb-4591b8b567a9"
 BDIO = "375f315e-f2c4-11e9-2ef9-134f02f79e27"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
