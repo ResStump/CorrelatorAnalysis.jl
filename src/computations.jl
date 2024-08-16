@@ -1,4 +1,4 @@
-@doc raw"""
+"""
     err!(a::AD.uwreal) -> a::AD.uwreal
 
 Compute the error of the `AD.uwreal` object `a` in place using the window parameters that
@@ -17,7 +17,7 @@ function err!(a::AD.uwreal)
     return a
 end
 
-@doc raw"""
+"""
     err!(a::AbstractArray{AD.uwreal}) -> a::Array{AD.uwreal}
 
 Compute the error of each `AD.uwreal` object in `a` in place using the window parameters
@@ -40,7 +40,7 @@ function err!(a::AbstractArray{AD.uwreal})
 end
 
 """
-    cov(a::AbstractVector{AD.uwreal}) -> C::Array{Float64}
+    cov(a::AbstractVector{AD.uwreal}) -> C::Matrix{Float64}
 
 Compute the covariance matrix of the vector `a` using the window parameters that were
 specified for the ensembles that `a` depends on.
@@ -55,8 +55,8 @@ function cov(a::AbstractVector{AD.uwreal})
     return cov
 end
 
-@doc raw"""
-    posdef_cov(a::AbstractVector{AD.uwreal}; correlation=false) -> C::Array{Float64}
+"""
+    posdef_cov(a::AbstractVector{AD.uwreal}; correlation=false) -> C::Matrix{Float64}
 
 Compute an approximate version of the covariance matrix of the vector `a` which is positive
 (semi-)definite (as long as all values in `a` are finite).
@@ -66,10 +66,10 @@ If `correlation=true`, compute the correlation matrix instead of the covariance 
 
 ### Method
 This algorithm approximates the integrated autocorrelation time of the offdiagonal covariance
-matrix entries `\tau_ij` as the geometric mean of those of the observables `a[i]` and
+matrix entries `τ_ij` as the geometric mean of those of the observables `a[i]` and
 `a[j]` (i.e. `τ_ij = √(τ_i*τ_j)`).
 
-To compute the `\tau_i`'s, the largest windows used in `a` to compute
+To compute the `τ_i`'s, the largest windows used in `a` to compute
 its error (i.e. for each ensemble separately) are used.
 
 This approximation might be bad if `a` depends on multiple ensembles with different
@@ -130,7 +130,7 @@ function posdef_cov(a::AbstractVector{AD.uwreal}; correlation=false)
     return 0.5*(C + C')
 end
 
-@doc raw"""
+"""
     effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0) -> m_eff::Vector{AD.uwreal}
 
 Compute the effective mass of the vector `Cₜ` using the specified `variant`.
@@ -140,11 +140,11 @@ algorithm.
 
 ### Variants
 - log: Use the standard effective mass `log(Cₜ(t)/Cₜ(t+1))`.
-- cosh: Use the periodicity of the correlator by solving \
-  `Cₜ(t)/Cₜ(t+1) = cosh(m*(t - Nₜ/2)) / cosh(m*(t + 1 - Nₜ/2))` \
+- cosh: Use the periodicity of the correlator by solving \\
+  `Cₜ(t)/Cₜ(t+1) = cosh(m*(t - Nₜ/2)) / cosh(m*(t + 1 - Nₜ/2))` \\
   for m.
-- sinh: Use the anti-periodicity of the correlator by solving \
-  `Cₜ(t)/Cₜ(t+1) = sinh(m*(t - Nₜ/2)) / sinh(m*(t + 1 - Nₜ/2))` \
+- sinh: Use the anti-periodicity of the correlator by solving \\
+  `Cₜ(t)/Cₜ(t+1) = sinh(m*(t - Nₜ/2)) / sinh(m*(t + 1 - Nₜ/2))` \\
   for m.
 """
 function effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0,
@@ -197,15 +197,15 @@ struct FitResult{C, P}
     p_value::P
 end
 
-@doc raw"""
+"""
     p_value(χ²::Function, data::AbstractVector{AD.uwreal}, p::AbstractArray{<:Real}, W::AbstractMatrix{<:Real}, χ²_obs::Real, dof::Integer; fit_type=nothing, p_value_type=nothing, N_mc=10^5, rng=Random.GLOBAL_RNG) -> p_val
 
 Compute the p-value for the chi-square function `χ²`, the data `data` and the
 optimized fit parameters `p`.
 
 ### Arguments
-- `χ²(p::Vector, d:Vector)`: Function of the parameters `p` and the data `d`. The function is expected to have the following form \
-  `χ²(p, d) = sum_{ij} [d_i - f_i(p)]W_ij[d_j - f_j(p)]` \
+- `χ²(p::Vector, d:Vector)`: Function of the parameters `p` and the data `d`. The function is expected to have the following form \\
+  `χ²(p, d) = sum_{ij} [d_i - f_i(p)]W_ij[d_j - f_j(p)]` \\
   for the model f_i(p).
 - `data::AbstractVector{AD.uwreal}`: The data for which the `χ²` function was
   optimized.
@@ -227,7 +227,7 @@ optimized fit parameters `p`.
 
 ### Method
 The p-value is computed as described in arXiv:2209.14188 for correlated and uncorrelated
-fits. \
+fits. \\
 The function `fit` allows to use the approximated covariance matrix computed with 
 `posdef_cov`. In that case `W` is treated as a general weight matrix to correct for this.
 """
@@ -311,7 +311,7 @@ function p_value(χ²::Function, data::AbstractVector{AD.uwreal}, p::AbstractArr
     return p_val
 end
 
-@doc raw"""
+"""
     fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::AbstractArray; fit_type=:correlated_posdef, gaussian_priors=nothing, gof=true, kargs...) -> fit_result::FitResult
 
 Perform a fit of the model function `model` to data `(xdata, ydata)`. The error is
@@ -445,7 +445,7 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
                                     chi_exp=true)
 
         p_val = p_value(χ², ydata_extended, AD.value.(fitp), W, χ²_obs, dof,
-                        fit_type=fit_type, kargs...)
+                        fit_type=fit_type; kargs...)
         χ²_red = χ²_obs/χ²_exp
     else
         fitp = AD.fit_error(χ², fit_result.param, ydata_extended, parms.wpm, chi_exp=false)
@@ -457,7 +457,7 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
     return fit_result
 end
 
-@doc raw"""
+"""
     fit_plateau(m_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0, kargs...) -> fit_result::FitResult
 
 Fit a constant function to the effective mass `m_eff` within the specified `plateau_range`.

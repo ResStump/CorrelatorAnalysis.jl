@@ -8,7 +8,7 @@ end
 parms = Parms()
 
 
-@doc raw"""
+"""
     add_mcid_to_parms!(mcid::String, window=:auto; S=2.0)
 
 For the ensemble with label `mcid` add a "window parameter" entry to the global window

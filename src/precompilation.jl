@@ -105,6 +105,7 @@ PrecompileTools.@compile_workload begin
 
     p0 = [5e-3, 0.11]
     fit_result = fit(corr_model, xdata, ydata, p0)
+    A, am_fit = fit_result.param
 
     # Plot function calls
     plot_correlator(Cₜ)

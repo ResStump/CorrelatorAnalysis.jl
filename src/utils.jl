@@ -21,7 +21,7 @@ for op in (:+, :-, :*, :/, :^, :atan, :hypot)
     end
 end
 
-@doc raw"""
+"""
     uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last; S=2.0, calc_err=true) -> uwdata::Array{AD.uwreal}
 
 Create an array of `AD.uwreal` objects from the input `data` array which is assumed to have
@@ -63,7 +63,7 @@ function uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:l
     return uwdata
 end
 
-@doc raw"""
+"""
     fold_correlator(Cₜ::AbstractVector{AD.uwreal}) -> Cₜ_folded::Vector{AD.uwreal}
 
 Fold the correlator `Cₜ` by averaging the entries `Cₜ[i]` and `Cₜ[Nₜ-i]` for `i in 2:Nₜ/2`
@@ -77,7 +77,7 @@ function fold_correlator(Cₜ::AbstractVector{AD.uwreal})
     return Cₜ_folded
 end
 
-@doc raw"""
+"""
     markov_chain(rng, N::Integer, μ::Real, σ::Real, τ::Real) -> uwdata::Vector{AD.uwreal}
     markov_chain(N::Integer, μ::Real, σ::Real, τ::Real) -> uwdata::Vector{AD.uwreal}
 

@@ -1,24 +1,18 @@
 module CorrelatorAnalysis
 
 import ADerrors as AD
+import BDIO
+import Dates
+import ForwardDiff as FD
 import LinearAlgebra as LA
 import LsqFit
-import Plots
-import Statistics as Stats
-import SpecialFunctions as SF
-import ForwardDiff as FD
-import Random
-import BDIO
 import PhysicalConstants.CODATA2018 as PCC18
+import Plots
+import Random
+import SpecialFunctions as SF
+import Statistics as Stats
 using LaTeXStrings
 import PrecompileTools
-
-export ħc, add_mcid_to_parms!
-export uwreal_array, fold_correlator, markov_chain
-export err!, effective_mass, fit, fit_plateau
-export plot_correlator!, plot_correlator, plot_autocorrelation
-export plot_effective_mass!, plot_effective_mass
-export plot_error_rectangle!, plot_error_rectangle, plot_model!, plot_model
 
 include("parms.jl")
 include("IO.jl")
