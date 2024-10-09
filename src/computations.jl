@@ -153,7 +153,16 @@ function effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0
     err!.(Cₜ)
 
     if variant in [:exp, :log]
-        m_eff = log.(Cₜ./circshift(Cₜ, -1))
+        ratio = Cₜ./circshift(Cₜ, -1)
+        
+        # Set all nonpositive values to NaN
+        for i in eachindex(ratio)
+            if ratio[i] ≤ 0
+                ratio[i] = AD.uwreal(NaN)
+            end
+        end
+
+        m_eff = log.(ratio)
     elseif variant in [:cosh, :sinh]
         N_elements = length(Cₜ)
         if folded
