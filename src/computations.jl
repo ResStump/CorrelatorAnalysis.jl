@@ -321,7 +321,7 @@ function p_value(χ²::Function, data::AbstractVector{AD.uwreal}, p::AbstractArr
 end
 
 """
-    fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::AbstractArray; fit_type=:correlated_posdef, gaussian_priors=nothing, gof=true, kargs...) -> fit_result::FitResult
+    fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::AbstractArray; fit_type=:correlated_posdef, gaussian_priors=nothing, gof=false, kargs...) -> fit_result::FitResult
 
 Perform a fit of the model function `model` to data `(xdata, ydata)`. The error is
 automatically propagated to the fit parameters.
@@ -344,7 +344,7 @@ automatically propagated to the fit parameters.
   For each key `i` in the `Dict` the term `(p[i] - μ)²/σ²` is added to the chi-square
   function.
 - `gof`: Whether to compute the goodness of fit (gof) metrics χ²_red and the p-value.
-  Default is true.
+  Default is false.
 
 ### Returns
 `fit_result`: A `FitResult` object containing the fit parameters and goodness of fit metrics.
@@ -359,7 +359,7 @@ It has the following fields:
 """
 function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
              p0::AbstractArray; fit_type=:correlated_posdef,
-             gaussian_priors=nothing, gof=true, kargs...)
+             gaussian_priors=nothing, gof=false, kargs...)
     # Compute error
     err!.(ydata)
 
