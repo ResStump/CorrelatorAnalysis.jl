@@ -19,9 +19,7 @@
 
     # Constant fit to plateau
     plateau_range = [13, 49]
-    fit_result = CA.fit_plateau(am_eff, plateau_range, fit_type=:uncorrelated,
-                                gof=false)
-    am = fit_result.param[1]
+    am = CA.fit_plateau(am_eff, plateau_range)
     CA.err!(am)
     m = CA.err!(am/a)
 
@@ -37,8 +35,7 @@
     ydata = Cₜ[xdata.+1]
 
     p0 = [2e-3, 0.11]
-    fit_result = CA.fit(corr_model, xdata, ydata, p0, fit_type=:uncorrelated, gof=false)
-    (A, am_fit) = fit_result.param
+    (A, am_fit), cexp = CA.fit(corr_model, xdata, ydata, p0)
     CA.err!(A)
     m_fit = CA.err!(am_fit/a)
 
@@ -58,9 +55,7 @@
 
     # Constant fit to plateau
     plateau_range_folded = [12, 31]
-    fit_result = CA.fit_plateau(am_eff_folded, plateau_range_folded, fit_type=:uncorrelated,
-                                gof=false)
-    am_folded = fit_result.param[1]
+    am_folded = CA.fit_plateau(am_eff_folded, plateau_range_folded)
     CA.err!(am_folded)
     m_folded = CA.err!(am_folded/a)
 
@@ -74,8 +69,7 @@
     ydata = Cₜ_folded[xdata.+1]
 
     p0 = [5e-3, 0.11]
-    fit_result = CA.fit(corr_model, xdata, ydata, p0, fit_type=:uncorrelated, gof=false)
-    (A_folded, am_folded_fit) = fit_result.param
+    (A_folded, am_folded_fit), cexp = CA.fit(corr_model, xdata, ydata, p0)
     CA.err!(A_folded)
     m_folded_fit = CA.err!(am_folded_fit/a)
 
@@ -107,9 +101,7 @@ end
 
     # Constant fit to plateau
     plateau_range = [11, 51]
-    fit_result = CA.fit_plateau(am_eff, plateau_range, fit_type=:uncorrelated,
-                                gof=false)
-    am = fit_result.param[1]
+    am = CA.fit_plateau(am_eff, plateau_range)
     m = CA.err!(am/a)
 
     @test AD.value(m) ≈ 657.3138400277402
@@ -122,8 +114,7 @@ end
     ydata = Cₜ[xdata.+1]
 
     p0 = [7e-3, 0.25]
-    fit_result = CA.fit(corr_model, xdata, ydata, p0, fit_type=:uncorrelated, gof=false)
-    (A, am_fit) = fit_result.param
+    (A, am_fit), cexp = CA.fit(corr_model, xdata, ydata, p0)
     CA.err!(A)
     m_fit = CA.err!(am_fit/a)
 
@@ -143,9 +134,7 @@ end
 
     # Constant fit to plateau
     plateau_range_folded = [11, 28]
-    fit_result = CA.fit_plateau(am_eff_folded, plateau_range_folded, fit_type=:uncorrelated,
-                                gof=false)
-    am_folded = fit_result.param[1]
+    am_folded = CA.fit_plateau(am_eff_folded, plateau_range_folded)
     m_folded = CA.err!(am_folded/a)
 
 
@@ -157,9 +146,7 @@ end
     ydata = Cₜ_folded[xdata.+1]
 
     p0 = [7e-3, 0.25]
-    fit_result = CA.fit(corr_model, xdata, ydata, p0, fit_type=:uncorrelated,
-                                gof=false)
-    (A_folded, am_folded_fit) = fit_result.param
+    (A_folded, am_folded_fit), cexp = CA.fit(corr_model, xdata, ydata, p0)
     CA.err!(A_folded)
     m_folded_fit = CA.err!(am_folded_fit/a)
 
@@ -167,44 +154,4 @@ end
     @test AD.err(m_folded_fit) ≈ 1.5926570085408367
     @test AD.value(A_folded) ≈ 0.006503071705487689
     @test AD.err(A_folded) ≈ 0.0001060639274430725
-end
-
-@testset "p-value" begin
-    # Creat random correlator
-    # (with large number of cnfgs to get positive definite covariance matrix)
-    rng = Random.MersenneTwister(154)
-    Nₜ, N_cnfg = 16, 10000
-
-    τ = 4
-    A_exact, m_exact = 1e-2, 0.1
-    σ_rel = 0.005
-
-    corr = Array{Float64}(undef, Nₜ, N_cnfg)
-    for (iₜ, t) in enumerate(0:Nₜ-1)
-        μ = A_exact*cosh(m_exact*(t - Nₜ/2))
-        corr[iₜ, :] = CA.markov_chain(rng, N_cnfg, μ, σ_rel*μ, τ)
-    end
-
-    mcid = "random_10000"
-    Cₜ = CA.uwreal_array(corr, mcid, :auto)
-
-    # Fold correlator
-    Cₜ_folded = CA.fold_correlator(Cₜ)
-
-    # Effective mass of folded correlator
-    am_eff_folded = CA.effective_mass(Cₜ_folded, :cosh, folded=true)
-    CA.err!.(am_eff_folded)
-
-    # Perform correlated fit and compute p-value once with exact formula and once with 
-    # general formula using MC
-    plateau_range_folded = [2, 6]
-    p_value_exact = CA.fit_plateau(am_eff_folded, plateau_range_folded,
-                                   fit_type=:correlated, gof=true,
-                                   p_value_type=:correlated).p_value
-    p_value_general = CA.fit_plateau(am_eff_folded, plateau_range_folded,
-                                     fit_type=:correlated, gof=true,
-                                     p_value_type=:general, N_mc=10^6, rng=rng).p_value
-
-    # Compare p-values to 3 decimal palces
-    @test abs(p_value_exact - p_value_general) < 1e-3
 end
