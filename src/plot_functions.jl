@@ -95,16 +95,18 @@ plot_effective_mass!(m_eff::AbstractVector{AD.uwreal}; kargs...) =
 # Helper function
 rectangle(x1, x2, y, h) = Plots.Shape([x1, x2, x2, x1], y .+ [-h,-h,h,h])
 
-function plot_error_rectangle!(p::Plots.Plot, m::AD.uwreal, plateau_range; kargs...)
+function plot_error_rectangle!(p::Plots.Plot, m::AD.uwreal, plateau_range;
+                               fill_kargs=Dict(), color=:red, kargs...)
     # Compute error
     err!(m)
     
     # Plot value of mass as horizontal line
-    Plots.plot!(p, plateau_range, ones(2)*AD.value(m), color=:red, z_order=:front;
+    Plots.plot!(p, plateau_range, ones(2)*m.mean; color=color, z_order=:front,
                 label="Fit result", kargs...)
     # Plot red rectangular area
-    Plots.plot!(p, rectangle(plateau_range[1], plateau_range[2], AD.value(m), AD.err(m)),
-                color=:red, opacity=0.4, z_order=:back, label=nothing)
+    Plots.plot!(p, rectangle(plateau_range[1], plateau_range[2], m.mean, m.err);
+                color=color, opacity=0.3, lineopacity=0, z_order=:back, label=nothing,
+                fill_kargs...)
 
     return p
 end
@@ -113,11 +115,25 @@ plot_error_rectangle(m::AD.uwreal, plateau_range; kargs...) =
 plot_error_rectangle!(m::AD.uwreal, plateau_range; kargs...) = 
     plot_error_rectangle!(Plots.plot!(), m, plateau_range; kargs...)
 
-function plot_model!(p::Plots.Plot, model, xdata_range::AbstractVector,
-                     parms::AbstractArray; kargs...)
-    xdata = LinRange(xdata_range..., 100)
-    
-    Plots.plot!(p, xdata, model(xdata, parms), linewidth=2, label="Fit result"; kargs...)
+function plot_herrorline!(p::Plots.Plot, m::AD.uwreal; color=:red, fill_kargs=Dict(),
+                         kargs...)
+    # Compute error
+    err!(m)
+
+    Plots.hline!(p, [m.mean]; linestyle=:dash, color=color, kargs...)
+    Plots.hspan!(p, m.mean .+ [-m.err, m.err]; color=color, opacity=0.3, lineopacity=0,
+                 z_order=:back, label=nothing, fill_kargs...)
+
+    return p
+end
+plot_herrorline(m::AD.uwreal; kargs...) = 
+    plot_herrorline!(Plots.plot(), m; kargs...)
+plot_herrorline!(m::AD.uwreal; kargs...) =
+    plot_herrorline!(Plots.plot!(), m; kargs...)
+
+function plot_model!(p::Plots.Plot, model::Function, xdata_range::AbstractVector,
+                     parms::AbstractArray; kargs...)    
+    Plots.plot!(p, xdata -> model(xdata, parms), linewidth=2, label="Fit result"; kargs...)
 
     return p
 end
