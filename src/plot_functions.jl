@@ -120,7 +120,7 @@ function plot_herrorline!(p::Plots.Plot, m::AD.uwreal; color=:red, fill_kargs=Di
     # Compute error
     err!(m)
 
-    Plots.hline!(p, [m.mean]; linestyle=:dash, color=color, kargs...)
+    Plots.hline!(p, [m.mean]; color=color, kargs...)
     Plots.hspan!(p, m.mean .+ [-m.err, m.err]; color=color, opacity=0.3, lineopacity=0,
                  z_order=:back, label=nothing, fill_kargs...)
 
