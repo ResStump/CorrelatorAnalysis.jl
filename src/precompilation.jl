@@ -1,16 +1,16 @@
 PrecompileTools.@setup_workload begin
+    PrecompileTools.@compile_workload begin
 
-# Input of uwreal's
-a = AD.uwreal(rand(1000), "White noise")
-b = AD.uwreal([1.0, 0.1], "Var with error")
-p = AD.cobs([1.0, 2.0], [1.0 0.1; 0.1 2.0], "Parameters")
+    # Input of uwreal's
+    a = AD.uwreal(rand(1000), "White noise")
+    b = AD.uwreal([1.0, 0.1], "Var with error")
+    p = AD.cobs([1.0, 2.0], [1.0 0.1; 0.1 2.0], "Parameters")
 
-PrecompileTools.@compile_workload begin
     # ADerrors function calls
     #########################
 
-    for op in (:-, :sin, :cos, :log, :log10, :log2, :sqrt, :exp, :exp2, :exp10, :sinh, :cosh, :tanh)
-        @eval c = $op(a)
+    for op in (-, sin, cos, log, log10, log2, sqrt, exp, exp2, exp10, sinh, cosh, tanh)
+        c = op(a)
     end
     c = 1.0 + b
     c = 1.0 - b
@@ -112,5 +112,8 @@ PrecompileTools.@compile_workload begin
     plot_model!(corr_model, [0, Nₜ÷2], AD.value.([A, am_fit]))
     plot_effective_mass(am_eff)
     plot_error_rectangle!(am, plateau_range)
+
+    # Remove "random" entrie in wpm
+    delete!(parms.wpm, "random")
 end
 end
