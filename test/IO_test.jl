@@ -13,6 +13,7 @@
 
     # Create uwreal array
     uwarr = CA.uwreal_array(samples, "MC ensemble", :auto)
+    CA.err!.(uwarr)
 
     # Write and read single AD.uwreal object
     CA.write_uwreal("test.bdio", uwarr[1])
@@ -20,11 +21,21 @@
     @test AD.value(a_read) ≈ AD.value(uwarr[1])
     @test AD.err(a_read) ≈ AD.err(uwarr[1])
 
-    # Write and read AD.uwreal array
+    # Write AD.uwreal array
     CA.write_uwreal("test.bdio", uwarr)
+
+    # Change wpm entry to see if it is set correctly
+    wpm_old = CA.parms.wpm
+    CA.parms.wpm["MC ensemble"] = Float64[0, 0, 0, 0]
+
+    # Read AD.uwreal array
     uwarr_read = CA.err!(CA.read_uwreal("test.bdio"))
     @test AD.value.(uwarr_read) ≈ AD.value.(uwarr)
     @test AD.err.(uwarr_read) ≈ AD.err.(uwarr)
+
+    # Check if window parameters are set correctly
+    @test all(AD.ensembles.(uwarr) .== AD.ensembles.(uwarr_read))
+    @test wpm_old == CA.parms.wpm
 
     # Write and read AD.uwreal array with reshaped data
     shape = (2, 5)
