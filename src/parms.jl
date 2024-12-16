@@ -1,11 +1,9 @@
 mutable struct Parms
     wpm::Dict{String, Vector{Float64}}
-
-    Parms() = new()
 end
 
 # Instance of parms
-parms = Parms()
+parms = Parms(Dict{String, Vector{Float64}}())
 
 
 """
@@ -20,11 +18,6 @@ procedure with the given parameter `S` (default is 2.0) is used.
 If the id `mcid` exists already it is overwritten.
 """
 function add_mcid_to_parms!(mcid::String, window=:auto; S=2.0)
-    # Check if wpm dict is already defined
-    if !isdefined(parms, :wpm)
-        parms.wpm = Dict{String, Vector{Float64}}()
-    end
-
     if window === :auto
         parms.wpm[mcid] = Float64[-1, S, -1, -1]
     elseif window >= 1
