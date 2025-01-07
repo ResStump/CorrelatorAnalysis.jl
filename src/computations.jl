@@ -130,13 +130,80 @@ function posdef_cov(a::AbstractVector{AD.uwreal}; correlation=false)
     return 0.5*(C + C')
 end
 
+@doc raw"""
+    GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀, ret_eigvecs=false) -> λ::Matrix{AD.uwreal} (, v)
+
+Solve the Generalized Eigenvalue Problem (GEVP) `Cₜ(t)v = λ(t) Cₜ(t₀)v` and return the
+eigenvalues as an `AD.uwreal` matrix `λ` such that slice `λ[t+1, :]` contains the eigenvalues at
+time `t` in decreasing order. For `t ≤ t₀`, the eigenvalues are set to `NaN`.
+
+If `ret_eigvecs=true`, also return the eigenvectors in a rank 3 tensor `v`. The slice
+`v[t+1, :, k]` then contains the `k`th eigenvectors at time `t`.
 """
-    effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0) -> m_eff::Vector{AD.uwreal}
+function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀; ret_eigvecs=false)
+    # Index of t₀
+    i_t₀ = t₀+1
+
+    # Get Nₜ and number of operators
+    Nₜ, N_op, _ = size(Cₜ)
+
+    λ_t = Vector{AD.uwreal}(undef, N_op)
+    λ = Array{AD.uwreal, 2}(undef, Nₜ, N_op)
+    if ret_eigvecs
+        v = Array{ComplexF64, 3}(undef, Nₜ, N_op, N_op)
+    end
+    for iₜ in 1:Nₜ
+        if iₜ <= i_t₀
+            λ[iₜ, :] .= [AD.uwreal(NaN)]
+
+            if ret_eigvecs
+                v[iₜ, :, :] .= [NaN]
+            end
+        else
+            # Compute eigenvectors (sorted in decreasing order of real part of eigenvalue)
+            v_t = LA.eigvecs(AD.value.(Cₜ[iₜ, :, :]), AD.value.(Cₜ[i_t₀, :, :]),
+                           sortby=(λ->-real(λ)))
+            if ret_eigvecs
+                v[iₜ, :, :] = v_t
+            end
+
+            # Compute eigenvalues as AD.uwreal
+            if v_t isa Matrix{Float64}
+                for i in 1:N_op
+                    λ_t[i] = v_t[:, i]'*(Cₜ[iₜ, :, :]*v_t[:, i])
+                end
+            else
+                # If v_t is complex treat real and imaginary part seperately
+                for i in 1:N_op
+                    λ_t[i] = (real(v_t[:, i])'*(Cₜ[iₜ, :, :]*real(v_t[:, i])) +
+                              imag(v_t[:, i])'*(Cₜ[iₜ, :, :]*imag(v_t[:, i])))
+                end
+            end
+
+            λ[iₜ, :] = λ_t
+        end
+    end
+    
+    if ret_eigvecs
+        if all(imag(v) .== 0)
+            return λ, real(v)
+        else
+            return λ, v
+        end
+    else
+        return λ
+    end
+end
+
+"""
+    effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0,
+                        folded=false) -> m_eff::Vector{AD.uwreal}
 
 Compute the effective mass of the vector `Cₜ` using the specified `variant`.
 
 Optionally, provide the parameter `guess` as an initial value for the root finding
-algorithm.
+algorithm. If `folded=true`, the correlator is assumed to be folded (only relevant for 
+`variant=:cosh` or `variant=:sinh` to determine `Nₜ`).
 
 ### Variants
 - log: Use the standard effective mass `log(Cₜ(t)/Cₜ(t+1))`.
