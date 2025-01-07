@@ -44,6 +44,10 @@
     @test AD.value.(uwarr_read) ≈ AD.value.(reshape(uwarr, shape))
     @test AD.err.(uwarr_read) ≈ AD.err.(reshape(uwarr, shape))
 
+    # Write and read NaN
+    CA.write_uwreal("test.bdio", AD.uwreal(NaN))
+    CA.err!(CA.read_uwreal("test.bdio"))
+
     rm("test.bdio")
 
     
