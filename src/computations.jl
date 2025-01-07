@@ -130,10 +130,10 @@ function posdef_cov(a::AbstractVector{AD.uwreal}; correlation=false)
     return 0.5*(C + C')
 end
 
-@doc raw"""
+"""
     GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀, ret_eigvecs=false) -> λ::Matrix{AD.uwreal} (, v)
 
-Solve the Generalized Eigenvalue Problem (GEVP) `Cₜ(t)v = λ(t) Cₜ(t₀)v` and return the
+Solve the Generalized Eigenvalue Problem (GEVP) `Cₜ(t)v = λ(t)Cₜ(t₀)v` and return the
 eigenvalues as an `AD.uwreal` matrix `λ` such that slice `λ[t+1, :]` contains the eigenvalues at
 time `t` in decreasing order. For `t ≤ t₀`, the eigenvalues are set to `NaN`.
 
