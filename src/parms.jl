@@ -30,4 +30,5 @@ end
 # Useful constants
 """Reduced Plank constant times speed of light in MeV*fm"""
 ħc = (PCC18.c_0*PCC18.ħ/PCC18.e*1e9).val # MeV*fm
+uwone = AD.uwreal([1.0, 0.0], "_one_") # 1 with error 0
 

@@ -142,13 +142,18 @@ function write_uwreal(filename, a::AbstractArray{AD.uwreal}, mode="d")
     AD.unique_ids!.(a, [AD.wsg])
     ids = Int[]
     wpm = Float64[]
-    for v in a
+    for (i, v) in enumerate(a)
         for id in v.ids
             ensemble = AD.get_name_from_id(id, AD.wsg)
             if id ∉ ids && haskey(parms.wpm, ensemble)
                 push!(ids, id)
                 append!(wpm, parms.wpm[ensemble])
             end
+        end
+
+        # If v doesn't have an error, multiply by uwone
+        if length(v.ids) == 0
+            a[i] = err!(v*uwone)
         end
     end
 
