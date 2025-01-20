@@ -102,7 +102,7 @@ function plot_error_rectangle!(p::Plots.Plot, m::AD.uwreal, plateau_range;
     
     # Plot value of mass as horizontal line
     Plots.plot!(p, plateau_range, ones(2)*m.mean; color=color, z_order=:front,
-                label="Fit result", kargs...)
+                kargs...)
     # Plot red rectangular area
     Plots.plot!(p, rectangle(plateau_range[1], plateau_range[2], m.mean, m.err);
                 color=color, opacity=0.3, lineopacity=0, z_order=:back, label=nothing,
@@ -116,7 +116,7 @@ plot_error_rectangle!(m::AD.uwreal, plateau_range; kargs...) =
     plot_error_rectangle!(Plots.plot!(), m, plateau_range; kargs...)
 
 function plot_herrorline!(p::Plots.Plot, m::AD.uwreal; color=:red, fill_kargs=Dict(),
-                         kargs...)
+                          kargs...)
     # Compute error
     err!(m)
 
