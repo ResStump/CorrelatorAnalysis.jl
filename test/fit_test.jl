@@ -208,3 +208,52 @@ end
     # Compare p-values to 3 decimal palces
     @test abs(p_value_exact - p_value_general) < 1e-3
 end
+
+@testset "GEVP" begin
+    # Read data and initialize correlator matrix
+    file_path = "data/correlator_matrix.hdf5"
+    file = HDF5.h5open(file_path)
+    corr_matrix = read(file["Correlator Matrix"])
+    close(file)
+    Nₜ, N_op, _, N_cnfg = size(corr_matrix)
+    Cₜ = CA.uwreal_array(corr_matrix, "B450r000", :auto)
+
+    # Compute effective energy using t₀ = ceil(t/2) method
+    plateau_range = [15, 24]
+    aE_eff = CA.GEVP(Cₜ, :ceil_t_half)
+
+    # Extract lowest 3 energy levels
+    fit_result = CA.fit_plateau(aE_eff[1], plateau_range, fit_type=:correlated_posdef)
+    aE0 = CA.err!(fit_result.param[1])
+    fit_result = CA.fit_plateau(aE_eff[2], plateau_range, fit_type=:correlated_posdef)
+    aE1 = CA.err!(fit_result.param[1])
+    fit_result = CA.fit_plateau(aE_eff[3], plateau_range, fit_type=:correlated_posdef)
+    aE2 = CA.err!(fit_result.param[1])
+
+    @test AD.value(aE0) ≈ 2.1524622389214803
+    @test AD.err(aE0) ≈ 0.0008896215919601967
+    @test AD.value(aE1) ≈ 2.17874053787349
+    @test AD.err(aE1) ≈ 0.0009186633907838645
+    @test AD.value(aE2) ≈ 2.1883420746340887
+    @test AD.err(aE2) ≈ 0.0008906508771061862
+
+    # Compute effective energy using t₀ = const method
+    t₀ = 12
+    plateau_range = [15, 24]
+    aE_eff = CA.GEVP(Cₜ, t₀)
+
+    # Extract lowest 3 energy levels
+    fit_result = CA.fit_plateau(aE_eff[1], plateau_range, fit_type=:correlated_posdef)
+    aE0 = CA.err!(fit_result.param[1])
+    fit_result = CA.fit_plateau(aE_eff[2], plateau_range, fit_type=:correlated_posdef)
+    aE1 = CA.err!(fit_result.param[1])
+    fit_result = CA.fit_plateau(aE_eff[3], plateau_range, fit_type=:correlated_posdef)
+    aE2 = CA.err!(fit_result.param[1])
+
+    @test AD.value(aE0) ≈ 2.152436415887633
+    @test AD.err(aE0) ≈ 0.0008891187819048125
+    @test AD.value(aE1) ≈ 2.1787670486036763
+    @test AD.err(aE1) ≈ 0.0009180396787471865
+    @test AD.value(aE2) ≈ 2.188342896037995
+    @test AD.err(aE2) ≈ 0.0008907154702271366
+end
