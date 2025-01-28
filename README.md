@@ -1,5 +1,5 @@
 # CorrelatorAnalysis.jl
-This is a analysis package to compute and propagate Markov Chain Monte Carlo error of correlation functions. It is written in Julia and relies on the package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.jl).
+This is an analysis package to compute and propagate Markov Chain Monte Carlo error of correlation functions. It is written in Julia and relies on the package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.jl).
 
 ## Installation
 To install this package [ADerrors.jl](https://igit.ific.uv.es/alramos/aderrors.jl) has to be installed first. Then, you can install it the following two ways in the julia Pkg mode.
@@ -19,7 +19,6 @@ Documentation is provided in the doc strings of the functions.
 
 
 ## Examples
-
 The folder `examples` contains Jupyter notebooks which show the basic functionalities of `CorrelatorAnalysis`.
 
 The notebook `correlator_analysis_random.ipynb` shows the error analysis of a randomly generated meson like correlator with autocorrelation.
