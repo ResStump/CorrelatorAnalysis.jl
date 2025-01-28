@@ -159,8 +159,9 @@ effective energy `Eₙ_eff(t, t₀) = log(λₙ(t, t₀)/λₙ(t+1, t₀))` as a
 vectors `E_eff`. The outer index is the eigenvalue index `ₙ` and the inner index is the time
 `t`. \\
 The parameter `t₀` specifies `t₀` in `Eₙ_eff(t, t₀)`. The options are:
-* `:ceil_t_half` which sets `t₀ = ceil(t/2)` (default).
-* an `Int`. In that case `t₀` is always the same and the entries for `Eₙ_eff(t, t₀)` with `t<t₀` are set to NaN.
+- `:ceil_t_half` which sets `t₀ = ceil(t/2)` (default).
+- an `Int`. In that case `t₀` is always the same and the entries for `Eₙ_eff(t, t₀)` with
+  `t<t₀` are set to NaN.
 """
 function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Union{Int, Symbol}=:ceil_t_half)
     # Get Nₜ and number of operators
