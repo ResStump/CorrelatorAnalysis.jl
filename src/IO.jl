@@ -15,50 +15,65 @@ function read_uwreal(filename; return_info=false)
     # Open BDIO file
     fb = BDIO.BDIO_open(string(filename), "r")
 
-    # Read info, size of stored array, ensemble ids and window parameters
+    # Read info, size of stored array, and window parameters
     info = nothing
     dims = nothing
-    ids = nothing
+    nids = nothing
     wpm = nothing
+    itmp = Vector{Int64}(undef, 1)
     while BDIO.BDIO_seek!(fb) && (info === nothing || dims === nothing)
         # Read info
         if BDIO.BDIO_get_uinfo(fb) == 0
             info = BDIO.BDIO_read_str(fb)
         end
 
-        # Read size
+        # Read sizes and window parameters
         if BDIO.BDIO_get_uinfo(fb) == 1
             # Read number of dimensions
-            ndims = Vector{Int64}(undef, 1)
-            BDIO.BDIO_read(fb, ndims)
+            BDIO.BDIO_read(fb, itmp)
+            ndims = itmp[1]
 
             # Read size of array
-            dims = Vector{Int64}(undef, ndims[1])
+            dims = Vector{Int64}(undef, ndims)
             BDIO.BDIO_read(fb, dims)
 
-            # Read ensemble ids and window parameters
-            nids = Vector{Int64}(undef, 1)
-            BDIO.BDIO_read(fb, nids)
-            if nids[1] > 0
-                ids = Vector{Int64}(undef, nids[1])
-                BDIO.BDIO_read(fb, ids)
-                wpm = Vector{Float64}(undef, 4*nids[1])
+            # Read window parameters
+            BDIO.BDIO_read(fb, itmp)
+            nids = itmp[1]
+            if nids > 0
+                wpm = Vector{Float64}(undef, 4*nids)
                 BDIO.BDIO_read(fb, wpm)
             else
-                ids = Int[]
                 wpm = Float64[]
             end
         end
     end
-    if info === nothing || dims === nothing
+    if info === nothing
+       throw(ArgumentError("the info string is not stored in the right format."))
+    end 
+    if dims === nothing
         throw(ArgumentError("the dimension are not stored in the right format."))
+    end
+
+    # Read ensemble names
+    idx = 0
+    ensembles = Vector{String}(undef, nids)
+    while idx < nids && BDIO.BDIO_seek!(fb)
+        if BDIO.BDIO_get_uinfo(fb) == 1
+            idx += 1
+            str = BDIO.BDIO_read_str(fb)
+            ensembles[idx] = str[1:end-3] # Remove tail
+        end
+    end
+    if idx != nids
+        throw(ArgumentError("file does not contain enough of ensemble names."))
     end
 
     # Read uwreal objects
     len = prod(dims)
     idx = 0
     a = Vector{AD.uwreal}(undef, len)
-    while BDIO.BDIO_seek!(fb) && idx < len
+    while idx < len && BDIO.BDIO_seek!(fb)
         if BDIO.BDIO_get_uinfo(fb) == 2
             idx += 1
             a[idx] = AD.read_uwreal(fb)
@@ -78,8 +93,7 @@ function read_uwreal(filename; return_info=false)
 
     # Set window parameters
     wpm = reshape(wpm, 4, :)
-    for (i, id) in enumerate(ids)
-        ensemble = AD.get_name_from_id(id, AD.wsg)
+    for (i, ensemble) in enumerate(ensembles)
         parms.wpm[ensemble] = wpm[:, i]
     end
 
@@ -101,20 +115,18 @@ Additionally, write an info string containing the creation date and program vers
 with the shape of the array and the relevant window parameters in `parms.wpm` to the file.
 
 ### Possible modes
-- Write mode ("w"): The file is created. If the file exists an error is
-  printed.
-- Delete mode ("d"): The file is created. If the file exists it is
-  overwritten.
+- Write mode ("w"): The file is created. If the file exists an error is printed.
+- Delete mode ("d"): The file is created. If the file exists it is overwritten.
 
 ### Format of file
 The info string, the shape, the window parameters and the `AD.uwreal` are stored to
 different records in the following way:
 - Record 0: Info string as `BDIO_ASC_GENERIC`.
-- Record 1: ndims(a), size(a)..., length(ids), ids..., wps... as `BDIO_BIN_GENERIC` where
-    `ids::Vector{Int}` are the ensemble ids and `wps::Vector{Float64}` are the (flattened)
-    window parameters relevent for `a`.
-    (or set ndims(a) = 1 size(a) = 1 if it's just a single
-  `AD.uwreal`).
+- Record 1: ndims(a), size(a)..., <number of ensembles>, wps... as `BDIO_BIN_GENERIC` and then
+    the <number of ensembles> ensemble names relevant for `a` in consecutive records 1 as
+    `BDIO_ASC_GENERIC`. Here, `wps::Vector{Float64}` are the (flattened) window parameters
+    for each ensemble.
+    (or ndims(a) = 1 and size(a) = 1 if it's just a single `AD.uwreal`).
 - Record 2: The `AD.uwreal` are stored in consecutive records 2 using the function
   `AD.write_uwreal`.
 """
@@ -138,15 +150,15 @@ function write_uwreal(filename, a::AbstractArray{AD.uwreal}, mode="d")
 
     BDIO.BDIO_write_hash!(fb)
 
-    # Get all ensemble ids for `a` that are in parms.wpm and their window parameters 
+    # Get all ensemble names for `a` that are in parms.wpm, and their window parameters 
     AD.unique_ids!.(a, [AD.wsg])
-    ids = Int[]
+    ensembles = String[]
     wpm = Float64[]
     for (i, v) in enumerate(a)
         for id in v.ids
             ensemble = AD.get_name_from_id(id, AD.wsg)
-            if id ∉ ids && haskey(parms.wpm, ensemble)
-                push!(ids, id)
+            if ensemble ∉ ensembles && haskey(parms.wpm, ensemble)
+                push!(ensembles, ensemble)
                 append!(wpm, parms.wpm[ensemble])
             end
         end
@@ -161,15 +173,21 @@ function write_uwreal(filename, a::AbstractArray{AD.uwreal}, mode="d")
     BDIO.BDIO_start_record!(fb, BDIO.BDIO_BIN_GENERIC, 1)
     
     # Write size of array and number of ensembles
-    BDIO.BDIO_write!(fb, Int[ndims(a), size(a)..., length(ids)])
+    BDIO.BDIO_write!(fb, Int[ndims(a), size(a)..., length(ensembles)])
 
-    # Write the ensemble ids and then their window parameters
-    if length(ids) > 0
-        BDIO.BDIO_write!(fb, ids)
+    # Write the window parameters
+    if length(ensembles) > 0
         BDIO.BDIO_write!(fb, wpm)
     end
 
     BDIO.BDIO_write_hash!(fb)
+
+    # Write the ensemble names (consecutively to record 1)
+    for ensemble in ensembles
+        BDIO.BDIO_start_record!(fb, BDIO.BDIO_ASC_GENERIC, 1)
+        BDIO.BDIO_write!(fb, ensemble)
+        BDIO.BDIO_write_hash!(fb)
+    end
 
     # Write the uwreal objects in `a` to record 2
     for v in a
