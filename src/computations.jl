@@ -110,7 +110,7 @@ function posdef_cov(a::AbstractVector{AD.uwreal}; correlation=false)
     a_err = AD.err.(a_)
 
     # Generate window parameters with window 1 (i.e. no autocorrelation)
-    wpm0 = deepcopy(parms.wpm)
+    wpm0 = deepcopy(wopt)
     for k in keys(wpm0)
         wpm0[k] = [1.0, -1.0, -1.0, -1.0]
     end
