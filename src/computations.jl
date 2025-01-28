@@ -199,8 +199,15 @@ function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Union{Int, Symbol}=:ceil_
             eigvals_AD!(λ_t, Cₜ, iₜ, i_t₀)
             eigvals_AD!(λ_tp1, Cₜ, iₜ+1, i_t₀)
 
-            # Compute effective energy
-            E_eff[iₜ, :] = @. log(λ_t/λ_tp1)
+            # Compute effective energy (set all nonpositive values to NaN)
+            ratio = λ_t./λ_tp1
+
+            for i in eachindex(ratio)
+                if ratio[i] ≤ 0
+                    ratio[i] = AD.uwreal(NaN)
+                end
+            end
+            E_eff[iₜ, :] = @. log(ratio)
         end
 
         E_eff[end, :] .= [AD.uwreal(NaN)]
