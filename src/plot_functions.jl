@@ -20,8 +20,7 @@ function plot_correlator!(p::Plots.Plot, Cₜ::AbstractVector{AD.uwreal}; t_shif
 
     Nₜ = length(Cₜ)
     t_arr = (0:Nₜ-1) .+ t_shift
-    Plots.plot!(p, yscale=:log10, xlabel=L"t/a", ylabel=L"C(t)", legend=true,
-                minorticks=true)
+    Plots.plot!(p, yscale=:log10, xlabel=L"t/a", ylabel=L"C(t)", minorticks=true)
     Plots.scatter!(p, t_arr, Cₜ_values, yerror=Cₜ_err, label=corr_label,
                    markersize=2.5; kargs...)
 
