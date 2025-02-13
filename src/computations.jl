@@ -339,7 +339,7 @@ function p_value(χ²::Function, data::AbstractVector{AD.uwreal}, p::AbstractArr
         if fit_type in [:uncorrelated, :correlated_posdef]
             p_value_type = :general
         elseif fit_type == :correlated
-            p_value_type = :general
+            p_value_type = :correlated
         else
             throw(ArgumentError("unknown fit type. Use :uncorrelated, :correlated or "*
                                 ":correlated_posdef."))
