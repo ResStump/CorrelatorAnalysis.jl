@@ -1,7 +1,7 @@
 name = "CorrelatorAnalysis"
 uuid = "51dc7a32-bfba-47f5-8c7b-e9cc4ebff3e1"
 authors = ["Andres Stump <andres.stump@hu-berlin.de>"]
-version = "0.8.1"
+version = "0.8.2"
 
 [deps]
 ADerrors = "5e92007d-7bf1-471c-8ceb-4591b8b567a9"
