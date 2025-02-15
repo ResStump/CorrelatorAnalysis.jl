@@ -22,4 +22,5 @@
 
     @test AD.value.(uwarr1) == AD.value.(uwarr2)
     @test AD.err.(uwarr1) == AD.err.(uwarr2)
+    @test uwarr1 ≈ uwarr2
 end

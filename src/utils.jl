@@ -21,6 +21,13 @@ for op in (:+, :-, :*, :/, :^, :atan, :hypot)
     end
 end
 
+Base.isapprox(x::AD.uwreal, y::AD.uwreal; kargs...) = 
+    isapprox(AD.value(x), AD.value(y); kargs...) &&
+    isapprox(AD.err(x), AD.err(y); kargs...)
+Base.isapprox(x::AbstractArray{AD.uwreal}, y::AbstractArray{AD.uwreal}; kargs...) = 
+    isapprox(AD.value.(x), AD.value.(y); kargs...) &&
+    isapprox(AD.err.(x), AD.err.(y); kargs...)
+
 """
     uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last; S=2.0, calc_err=true) -> uwdata::Array{AD.uwreal}
 
