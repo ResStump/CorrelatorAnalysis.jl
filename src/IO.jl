@@ -163,9 +163,9 @@ function write_uwreal(filename, a::AbstractArray{AD.uwreal}, mode="d")
             end
         end
 
-        # If v doesn't have an error, multiply by uwone
+        # If v doesn't have an error, multiply by 1 ± 0
         if length(v.ids) == 0
-            a[i] = err!(v*uwone)
+            a[i] = err!(v*uwone())
         end
     end
 
