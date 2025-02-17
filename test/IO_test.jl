@@ -18,8 +18,7 @@
     # Write and read single AD.uwreal object
     CA.write_uwreal("test.bdio", uwarr[1])
     a_read = CA.err!(CA.read_uwreal("test.bdio"))
-    @test AD.value(a_read) ≈ AD.value(uwarr[1])
-    @test AD.err(a_read) ≈ AD.err(uwarr[1])
+    @test a_read ≈ uwarr[1]
 
     # Write AD.uwreal array
     CA.write_uwreal("test.bdio", uwarr)
@@ -30,8 +29,7 @@
 
     # Read AD.uwreal array
     uwarr_read = CA.err!(CA.read_uwreal("test.bdio"))
-    @test AD.value.(uwarr_read) ≈ AD.value.(uwarr)
-    @test AD.err.(uwarr_read) ≈ AD.err.(uwarr)
+    @test uwarr_read ≈ uwarr
 
     # Check if window parameters are set correctly
     @test all(AD.ensembles.(uwarr) .== AD.ensembles.(uwarr_read))
@@ -41,8 +39,7 @@
     shape = (2, 5)
     CA.write_uwreal("test.bdio", reshape(uwarr, shape))
     uwarr_read = CA.err!(CA.read_uwreal("test.bdio"))
-    @test AD.value.(uwarr_read) ≈ AD.value.(reshape(uwarr, shape))
-    @test AD.err.(uwarr_read) ≈ AD.err.(reshape(uwarr, shape))
+    @test uwarr_read ≈ reshape(uwarr, shape)
 
     # Write and read NaN
     CA.write_uwreal("test.bdio", AD.uwreal(NaN))
