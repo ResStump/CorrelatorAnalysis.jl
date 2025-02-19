@@ -65,10 +65,10 @@ function plot_autocorrelation(obs::AD.uwreal, mcid, N_cnfg_max=nothing; kargs...
     return p
 end
 
-function plot_effective_mass!(p::Plots.Plot, m_eff::AbstractVector{AD.uwreal};
-                              unit="lattice", t_shift=0, kargs...)
+function plot_effective_energy!(p::Plots.Plot, E_eff::AbstractVector{AD.uwreal};
+                                unit="lattice", t_shift=0, kargs...)
     # Compute error
-    err!.(m_eff)
+    err!.(E_eff)
 
     # String that contains unit (empty if lattice units are used)
     if unit == "lattice"
@@ -77,19 +77,19 @@ function plot_effective_mass!(p::Plots.Plot, m_eff::AbstractVector{AD.uwreal};
         ylabel = L"$E_\mathrm{eff}(t)$ [%$unit]"
     end
 
-    # Plot effective mass
-    Nₜ = length(m_eff)
+    # Plot effective energy
+    Nₜ = length(E_eff)
     t_arr = (0:Nₜ-1) .+ t_shift
     Plots.plot!(p, xlabel=L"t/a", ylabel=ylabel, minorticks=true)
-    Plots.scatter!(p, t_arr, AD.value.(m_eff), yerror=AD.err.(m_eff),
-                   label="Effective mass", markersize=2.5; kargs...)
+    Plots.scatter!(p, t_arr, AD.value.(E_eff), yerror=AD.err.(E_eff),
+                   label="Effective energy", markersize=2.5; kargs...)
 
     return p
 end
-plot_effective_mass(m_eff::AbstractVector{AD.uwreal}; kargs...) = 
-    plot_effective_mass!(Plots.plot(), m_eff; kargs...)
-plot_effective_mass!(m_eff::AbstractVector{AD.uwreal}; kargs...) = 
-    plot_effective_mass!(Plots.plot!(), m_eff; kargs...)
+plot_effective_energy(E_eff::AbstractVector{AD.uwreal}; kargs...) = 
+    plot_effective_energy!(Plots.plot(), E_eff; kargs...)
+plot_effective_energy!(E_eff::AbstractVector{AD.uwreal}; kargs...) = 
+    plot_effective_energy!(Plots.plot!(), E_eff; kargs...)
 
 # Helper function
 rectangle(x1, x2, y, h) = Plots.Shape([x1, x2, x2, x1], y .+ [-h,-h,h,h])

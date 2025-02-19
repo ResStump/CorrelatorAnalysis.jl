@@ -88,12 +88,12 @@ PrecompileTools.@setup_workload begin
     Cₜ = uwreal_array(corr, "random", 1)
     Cₜ = fold_correlator(Cₜ)
 
-    # Compute effective mass
-    am_eff = effective_mass(Cₜ, :cosh, folded=true)
+    # Compute effective energy
+    aE_eff = effective_energy(Cₜ, :cosh, folded=true)
 
     # Constant fit to plateau
     plateau_range = [2, 6]
-    fit_result = fit_plateau(am_eff, plateau_range)
+    fit_result = fit_plateau(aE_eff, plateau_range)
     am = fit_result.param[1]
     err!(am)
 
@@ -110,7 +110,7 @@ PrecompileTools.@setup_workload begin
     # Plot function calls
     plot_correlator(Cₜ)
     plot_model!(corr_model, [0, Nₜ÷2], AD.value.([A, am_fit]))
-    plot_effective_mass(am_eff)
+    plot_effective_energy(aE_eff)
     plot_error_rectangle!(am, plateau_range)
 
     # Remove "random" entrie in wpm

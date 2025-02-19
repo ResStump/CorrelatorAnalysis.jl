@@ -186,7 +186,7 @@ function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Union{Int, Symbol}=:ceil_
             end
         end
 
-        E_eff = effective_mass.(eachcol(λ), :log)
+        E_eff = effective_energy.(eachcol(λ), :log)
     elseif t₀ == :ceil_t_half
         λ_t = Vector{AD.uwreal}(undef, N_op)
         λ_tp1 = Vector{AD.uwreal}(undef, N_op)
@@ -221,25 +221,25 @@ function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Union{Int, Symbol}=:ceil_
 end
 
 """
-    effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0, folded=false) -> m_eff::Vector{AD.uwreal}
+    effective_energy(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0, folded=false) -> E_eff::Vector{AD.uwreal}
 
-Compute the effective mass of the vector `Cₜ` using the specified `variant`.
+Compute the effective energy of the vector `Cₜ` using the specified `variant`.
 
 Optionally, provide the parameter `guess` as an initial value for the root finding
 algorithm. If `folded=true`, the correlator is assumed to be folded (only relevant for 
 `variant=:cosh` or `variant=:sinh` to determine `Nₜ`).
 
 ### Variants
-- log: Use the standard effective mass `log(Cₜ(t)/Cₜ(t+1))`.
+- log: Use the standard effective energy `log(Cₜ(t)/Cₜ(t+1))`.
 - cosh: Use the periodicity of the correlator by solving \\
-  `Cₜ(t)/Cₜ(t+1) = cosh(m*(t - Nₜ/2)) / cosh(m*(t + 1 - Nₜ/2))` \\
-  for m.
+  `Cₜ(t)/Cₜ(t+1) = cosh(E*(t - Nₜ/2)) / cosh(E*(t + 1 - Nₜ/2))` \\
+  for E.
 - sinh: Use the anti-periodicity of the correlator by solving \\
-  `Cₜ(t)/Cₜ(t+1) = sinh(m*(t - Nₜ/2)) / sinh(m*(t + 1 - Nₜ/2))` \\
-  for m.
+  `Cₜ(t)/Cₜ(t+1) = sinh(E*(t - Nₜ/2)) / sinh(E*(t + 1 - Nₜ/2))` \\
+  for E.
 """
-function effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0,
-                        folded=false)
+function effective_energy(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0,
+                          folded=false)
     # Compute error
     err!.(Cₜ)
 
@@ -253,7 +253,7 @@ function effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0
             end
         end
 
-        m_eff = log.(ratio)
+        E_eff = log.(ratio)
     elseif variant in [:cosh, :sinh]
         N_elements = length(Cₜ)
         if folded
@@ -262,31 +262,31 @@ function effective_mass(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0
             Nₜ = N_elements
         end
         
-        m_eff = Vector{AD.uwreal}(undef, N_elements)
+        E_eff = Vector{AD.uwreal}(undef, N_elements)
 
         # Define fit model
         if variant == :cosh
-            f = (m, p) -> cosh(m*(p[1] - Nₜ/2)) / cosh(m*(p[1]+1 - Nₜ/2)) - p[2]
+            f = (E, p) -> cosh(E*(p[1] - Nₜ/2)) / cosh(E*(p[1]+1 - Nₜ/2)) - p[2]
         else
-            f = (m, p) -> sinh(m*(p[1] - Nₜ/2)) / sinh(m*(p[1]+1 - Nₜ/2)) - p[2]
+            f = (E, p) -> sinh(E*(p[1] - Nₜ/2)) / sinh(E*(p[1]+1 - Nₜ/2)) - p[2]
         end
 
-        # Loop over all times `t` and compute effective mass
+        # Loop over all times `t` and compute effective energy
         for (iₜ, t) in enumerate(0:N_elements-1)
             p = [AD.uwreal(Float64(t)), Cₜ[iₜ]/Cₜ[mod1(iₜ+1, N_elements)]]
             # Try to find root, otherwise set value to NaN
             try
-                m_eff[iₜ] = abs(AD.root_error(f, Float64(guess), p))
+                E_eff[iₜ] = abs(AD.root_error(f, Float64(guess), p))
             catch e
-                m_eff[iₜ] = AD.uwreal(NaN)
+                E_eff[iₜ] = AD.uwreal(NaN)
                 println("For t = $t (iₜ=$iₜ): ", e)
             end
         end
     else
-        throw(ArgumentError("unknown variant to compute effective mass."))
+        throw(ArgumentError("unknown variant to compute effective energy."))
     end
 
-    return m_eff
+    return E_eff
 end
 
 struct FitResult{C, P}
@@ -558,13 +558,13 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
 end
 
 """
-    fit_plateau(m_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0, kargs...) -> fit_result::FitResult
+    fit_plateau(E_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0, kargs...) -> fit_result::FitResult
 
-Fit a constant function to the effective mass `m_eff` within the specified `plateau_range`.
+Fit a constant function to the effective energy `E_eff` within the specified `plateau_range`.
 
 ### Arguments
-- `m_eff::AbstractVector{AD.uwreal}`: The effective mass data.
-- `plateau_range`: The range of indices within `m_eff` to fit the constant function to.
+- `E_eff::AbstractVector{AD.uwreal}`: The effective energy data.
+- `plateau_range`: The range of indices within `E_eff` to fit the constant function to.
   It must be a `Vector` of length two of the form `[i_first, i_last]`.
 - `guess=1.0`: Initial guess for the constant value.
 - `kargs...`: Additional keyword arguments to be passed to the `fit` function.
@@ -573,12 +573,12 @@ Fit a constant function to the effective mass `m_eff` within the specified `plat
 `fit_result::FitResult`: The result of the constant fit. See the doc of the function `fit`
 for more information on its fields. 
 """
-function fit_plateau(m_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0, kargs...)
-    # Fit to effective mass
+function fit_plateau(E_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0, kargs...)
+    # Fit to effective energy
     model(x, p) = @. p[1] + 0*x
     
     xdata = range(plateau_range...)
-    ydata = m_eff[xdata.+1]
+    ydata = E_eff[xdata.+1]
     p0 = [guess]
 
     return fit(model, xdata, ydata, p0; kargs...)

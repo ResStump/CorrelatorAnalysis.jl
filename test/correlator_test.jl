@@ -14,8 +14,8 @@
     # Compute pion mass using non-folded correlator
     ###############################################
 
-    # Compute effective mass
-    am_eff = CA.effective_mass(Cₜ, :cosh)
+    # Compute effective energy
+    am_eff = CA.effective_energy(Cₜ, :cosh)
 
     # Constant fit to plateau
     plateau_range = [13, 49]
@@ -50,8 +50,8 @@
 
     Cₜ_folded = CA.fold_correlator(Cₜ)
 
-    # Compute effective mass
-    am_eff_folded = CA.effective_mass(Cₜ_folded, :cosh, folded=true)
+    # Compute effective energy
+    am_eff_folded = CA.effective_energy(Cₜ_folded, :cosh, folded=true)
 
     # Constant fit to plateau
     plateau_range_folded = [12, 31]
@@ -96,8 +96,8 @@ end
     # Compute pion mass using non-folded correlator
     ###############################################
 
-    # Compute effective mass
-    am_eff = CA.effective_mass(Cₜ, :cosh)
+    # Compute effective energy
+    am_eff = CA.effective_energy(Cₜ, :cosh)
 
     # Constant fit to plateau
     plateau_range = [11, 51]
@@ -129,8 +129,8 @@ end
 
     Cₜ_folded = CA.fold_correlator(Cₜ)
 
-    # Compute effective mass
-    am_eff_folded = CA.effective_mass(Cₜ_folded, :cosh, folded=true)
+    # Compute effective energy
+    am_eff_folded = CA.effective_energy(Cₜ_folded, :cosh, folded=true)
 
     # Constant fit to plateau
     plateau_range_folded = [11, 28]
