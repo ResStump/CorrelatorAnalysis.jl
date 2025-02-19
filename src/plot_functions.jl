@@ -72,9 +72,9 @@ function plot_effective_mass!(p::Plots.Plot, m_eff::AbstractVector{AD.uwreal};
 
     # String that contains unit (empty if lattice units are used)
     if unit == "lattice"
-        ylabel = L"am_\mathrm{eff}(t)"
+        ylabel = L"aE_\mathrm{eff}(t)"
     else
-        ylabel = L"$m_\mathrm{eff}(t)$ [%$unit]"
+        ylabel = L"$E_\mathrm{eff}(t)$ [%$unit]"
     end
 
     # Plot effective mass
