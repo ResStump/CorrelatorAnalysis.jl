@@ -221,6 +221,70 @@ function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Union{Int, Symbol}=:ceil_
 end
 
 """
+    overlaps_Z(Cₜ::Union{AbstractArray{<:Real, 3}, AbstractArray{<:AD.uwreal, 3}}, E_arr::Union{AbstractVector{<:Real}, AbstractVector{<:AD.uwreal}}, t::Int, t₀::Union{Int, Symbol}=:ceil_t_half, normalize=true) -> Z_in::Array{Float64, 2}
+
+Compute the matrix of overlaps `Z_in = <Ω|Oᵢ|n>` of the operator `Oᵢ` with the `n'th`
+eigenstates of the Hamiltonian. For that use the correlator matrix
+`Cₜ[t+1, i, j] = <Ω|Oᵢ(t)Oⱼ(0)^†|Ω>` and the energies `E_arr` of the lowest eigenstates.
+`Z_in` is computed for each operator `Oᵢ` and each eigenstate `n` for which the energy is
+given in `E_arr`.
+
+The time `t` and `t₀` is where the generalized eigenvalue problem is solved. The options
+for `t₀` are:
+- `:ceil_t_half` which sets `t₀ = ceil(t/2)` (default).
+- an `Int` with `t₀<t`.
+Additionally, specify if the `Z_in` should be normalized such that `sum(Z_in, dims=2) = 1`
+by setting `normalize=true` (default).
+
+# Reference
+To compute `Z_in` formula (3.1) in https://doi.org/10.1016/j.nuclphysb.2016.07.024 for
+`t_d = t` is used.
+"""
+function overlaps_Z(Cₜ::Union{AbstractArray{<:Real, 3}, AbstractArray{<:AD.uwreal, 3}},
+                   E_arr::Union{AbstractVector{<:Real}, AbstractVector{<:AD.uwreal}},
+                   t::Int, t₀::Union{Int, Symbol}=:ceil_t_half, normalize=true)
+    # Convert Cₜ and E_arr to Float if necessary
+    (Cₜ[1] isa AD.uwreal) && (Cₜ = AD.value.(Cₜ))
+    (E_arr[1] isa AD.uwreal) && (E_arr = AD.value.(E_arr))
+
+    # Get time indices
+    if t₀ == :ceil_t_half
+        t₀ = ceil(Int, t/2)
+    elseif t₀ isa Int
+        if t₀ >= t
+            throw(ArgumentError("t₀ must be smaller than t."))
+        end
+    else
+        throw(ArgumentError("unknown t₀. Use an integer or :ceil_t_half."))
+    end
+    iₜ, i_t₀ = t+1, t₀+1
+
+    if E_arr[1:end-1] > E_arr[2:end]
+        throw(ArgumentError("E_arr must be sorted in ascending order."))
+    end
+
+    # Number of levels and operators
+    N_levels = length(E_arr)
+    N_op = size(Cₜ, 2)
+
+    # Compute generealized eigenvalues and eigenvectors
+    # (sorted in decreasing order of real part of eigenvalue)
+    λ, v = LA.eigen(Cₜ[iₜ, :, :], Cₜ[i_t₀, :, :], sortby=(λ->-real(λ)))
+
+    Z_in = Array{Float64}(undef, N_op, N_levels)
+    for i_n in 1:N_levels
+        Z_in[:, i_n] = abs2.(exp(E_arr[i_n]*t/2)/√λ[i_n] * Cₜ[iₜ, :, :]*v[:, i_n])
+    end
+
+    if normalize
+        Z_in_normalized = stack(eachrow(Z_in) ./ sum.(eachrow(Z_in)), dims=1)
+        return Z_in_normalized
+    else
+        return Z_in
+    end
+end
+
+"""
     effective_energy(Cₜ::AbstractVector{AD.uwreal}, variant=:log; guess=1.0, folded=false) -> E_eff::Vector{AD.uwreal}
 
 Compute the effective energy of the vector `Cₜ` using the specified `variant`.
