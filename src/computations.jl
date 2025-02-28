@@ -221,7 +221,7 @@ function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Union{Int, Symbol}=:ceil_
 end
 
 """
-    overlaps_Z(Cₜ::Union{AbstractArray{<:Real, 3}, AbstractArray{<:AD.uwreal, 3}}, E_arr::Union{AbstractVector{<:Real}, AbstractVector{<:AD.uwreal}}, t::Int, t₀::Union{Int, Symbol}=:ceil_t_half, normalize=true) -> Z_in::Array{Float64, 2}
+    overlaps_Z(Cₜ::Union{AbstractArray{<:Real, 3}, AbstractArray{<:AD.uwreal, 3}}, E_arr::Union{AbstractVector{<:Real}, AbstractVector{<:AD.uwreal}}, t::Int; t₀::Union{Int, Symbol}=:ceil_t_half, normalization::Symbol=:N_inf) -> Z_in::Array{Float64, 2}
 
 Compute the matrix of overlaps `Z_in = <Ω|Oᵢ|n>` of the operator `Oᵢ` with the `n'th`
 eigenstates of the Hamiltonian. For that use the correlator matrix
@@ -233,8 +233,12 @@ The time `t` and `t₀` is where the generalized eigenvalue problem is solved. T
 for `t₀` are:
 - `:ceil_t_half` which sets `t₀ = ceil(t/2)` (default).
 - an `Int` with `t₀<t`.
-Additionally, specify if the `Z_in` should be normalized such that `sum(Z_in, dims=2) = 1`
-by setting `normalize=true` (default).
+Additionally, specify if and how to normalize the operators `Oᵢ` (and thus `Z_in`).
+The options are
+- `:N_inf`: normalize `Z_in` such that `Σ_{n=1}^∞ Z_in = Cₜ[1, i, i] = 1` (default).
+- `:N_max`: normalize `Z_in` such that `sum(Z_in, dims=2) = 1`
+    (equivalent to `Σ_{n=1}^N_max Z_in = 1` for `N_max = length(E_arr)`).
+- `:unnormalized`: do not normalize `Z_in`.
 
 # Reference
 To compute `Z_in` formula (3.1) in https://doi.org/10.1016/j.nuclphysb.2016.07.024 for
@@ -242,7 +246,8 @@ To compute `Z_in` formula (3.1) in https://doi.org/10.1016/j.nuclphysb.2016.07.0
 """
 function overlaps_Z(Cₜ::Union{AbstractArray{<:Real, 3}, AbstractArray{<:AD.uwreal, 3}},
                    E_arr::Union{AbstractVector{<:Real}, AbstractVector{<:AD.uwreal}},
-                   t::Int, t₀::Union{Int, Symbol}=:ceil_t_half, normalize=true)
+                   t::Int; t₀::Union{Int, Symbol}=:ceil_t_half,
+                   normalization::Symbol=:N_inf)
     # Convert Cₜ and E_arr to Float if necessary
     (Cₜ[1] isa AD.uwreal) && (Cₜ = AD.value.(Cₜ))
     (E_arr[1] isa AD.uwreal) && (E_arr = AD.value.(E_arr))
@@ -276,11 +281,14 @@ function overlaps_Z(Cₜ::Union{AbstractArray{<:Real, 3}, AbstractArray{<:AD.uwr
         Z_in[:, i_n] = abs2.(exp(E_arr[i_n]*t/2)/√λ[i_n] * Cₜ[iₜ, :, :]*v[:, i_n])
     end
 
-    if normalize
-        Z_in_normalized = stack(eachrow(Z_in) ./ sum.(eachrow(Z_in)), dims=1)
-        return Z_in_normalized
-    else
+    if normalization == :N_inf
+        return Z_in ./ LA.diag(Cₜ[1, :, :])
+    elseif normalization == :N_max
+        return stack(eachrow(Z_in) ./ sum.(eachrow(Z_in)), dims=1)
+    elseif normalization == :unnormalized
         return Z_in
+    else
+        throw(ArgumentError("unknown normalization. Use :N_inf, :N_max or :unnormalized."))
     end
 end
 
