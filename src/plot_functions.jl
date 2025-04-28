@@ -40,7 +40,6 @@ function plot_correlator!(ax::CM.Axis, Cₜ::AbstractVector{AD.uwreal}; t_shift=
     scatter_plot = CM.scatter!(ax, t_arr, Cₜ_values; label=corr_label, marker=marker,
                                kargs...)
     errorbars_plot = CM.errorbars!(ax, t_arr, Cₜ_values, Cₜ_err; label=corr_label, kargs...)
-    CM.axislegend(ax, merge=true)
 
     return ax, scatter_plot, errorbars_plot
 end
@@ -85,12 +84,10 @@ function plot_autocorrelation!(obs::AD.uwreal, mcid; N_cnfg_max=nothing, marker=
     CM.hlines!(ax, [0], color=:black)
 
     # Plot normalized autocorrelation
-    scatter_plot = CM.scatter!(ax, 0:N_cnfg_max-1, r[1:N_cnfg_max],
-                               label="Normalized autocorrelation"; marker=marker, kargs...)
-    errorbars_plot = CM.errorbars!(ax, 0:N_cnfg_max-1, r[1:N_cnfg_max], dr[1:N_cnfg_max],
-                                   label="Normalized autocorrelation"; kargs...)
-                                   
-    CM.axislegend(ax, merge=true)
+    scatter_plot = CM.scatter!(ax, 0:N_cnfg_max-1, r[1:N_cnfg_max];
+                               label="Normalized autocorrelation", marker=marker, kargs...)
+    errorbars_plot = CM.errorbars!(ax, 0:N_cnfg_max-1, r[1:N_cnfg_max], dr[1:N_cnfg_max];
+                                   label="Normalized autocorrelation", kargs...)
 
     return ax, scatter_plot, errorbars_plot
 end
@@ -121,11 +118,10 @@ function plot_effective_energy!(ax::CM.Axis, E_eff::AbstractVector{AD.uwreal};
     ax.ylabel=ylabel
 
     # Plot data
-    scatter_plot = CM.scatter!(ax, t_arr, AD.value.(E_eff),
-                               label="Effective energy"; marker=marker, kargs...)
-    errorbars_plot = CM.errorbars!(ax, t_arr, AD.value.(E_eff), AD.err.(E_eff), 
-                                   label="Effective energy"; kargs...)
-    CM.axislegend(ax, merge=true)
+    scatter_plot = CM.scatter!(ax, t_arr, AD.value.(E_eff);
+                               label="Effective energy", marker=marker, kargs...)
+    errorbars_plot = CM.errorbars!(ax, t_arr, AD.value.(E_eff), AD.err.(E_eff);
+                                   label="Effective energy", kargs...)
 
     return ax, scatter_plot, errorbars_plot
 end
@@ -142,10 +138,9 @@ function plot_error_rectangle!(ax::CM.Axis, E::AD.uwreal, plateau_range; color=:
     # Compute error
     err!(E)
 
-    lines_plot = CM.lines!(ax, plateau_range, [E.mean], color=color; kargs...)
-    errorband_plot = CM.band!(ax, plateau_range, E.mean-E.err, E.mean+E.err,
-                              color=(color, 0.3); kargs...)
-    CM.axislegend(ax, merge=true)
+    lines_plot = CM.lines!(ax, plateau_range, [E.mean]; color=color, kargs...)
+    errorband_plot = CM.band!(ax, plateau_range, E.mean-E.err, E.mean+E.err;
+                              color=(color, 0.3), kargs...)
 
     # Bring error band to back
     CM.translate!(errorband_plot, 0, 0, -10)
@@ -161,7 +156,6 @@ function plot_herrorline!(ax::CM.Axis, E::AD.uwreal; color=:red, kargs...)
 
     hlines_plot = CM.hlines!(ax, [E.mean]; color=color, kargs...)
     hspan_plot = CM.hspan!(ax, [E.mean-E.err], [E.mean+E.err]; color=(color, 0.3), kargs...)
-    CM.axislegend(ax, merge=true)
 
     # Bring error band to back
     CM.translate!(hspan_plot, 0, 0, -10)
@@ -171,22 +165,10 @@ end
 plot_herrorline!(E::AD.uwreal; kargs...) =
     plot_herrorline!(CM.current_axis(), E; kargs...)
 
-#= function plot_model!(p::Plots.Plot, model::Function, xdata_range::AbstractVector,
-                     parms::AbstractArray; kargs...)    
-    Plots.plot!(p, xdata -> model(xdata, parms), linewidth=2, label="Fit result"; kargs...)
-
-    return p
-end
-plot_model(model, xdata::AbstractVector, parms::AbstractArray; kargs...) = 
-    plot_model!(Plots.plot(), model, xdata, parms; kargs...)
-plot_model!(model, xdata::AbstractVector, parms::AbstractArray; kargs...) = 
-    plot_model!(Plots.plot!(), model, xdata, parms; kargs...) =#
-
 function plot_model!(ax::CM.Axis, model::Function, xdata_range::AbstractVector,
                      parms::AbstractArray; kargs...)    
     lines_plot = CM.lines!(ax, xdata_range[1]..xdata_range[end], xdata -> model(xdata, parms),
                            label="Fit result"; kargs...)
-    CM.axislegend(ax, merge=true)
 
     return ax, lines_plot
 end
