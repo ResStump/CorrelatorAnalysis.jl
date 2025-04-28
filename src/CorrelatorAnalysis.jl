@@ -8,6 +8,8 @@ import LinearAlgebra as LA
 import LsqFit
 import PhysicalConstants.CODATA2018 as PCC18
 import Plots
+import CairoMakie as CM
+using Makie
 import Random
 import SpecialFunctions as SF
 import Statistics as Stats
