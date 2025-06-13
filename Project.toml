@@ -1,13 +1,14 @@
 name = "CorrelatorAnalysis"
 uuid = "51dc7a32-bfba-47f5-8c7b-e9cc4ebff3e1"
 authors = ["Andres Stump <andres.stump@hu-berlin.de>"]
-version = "0.9.3"
+version = "0.9.4"
 
 [deps]
 ADerrors = "5e92007d-7bf1-471c-8ceb-4591b8b567a9"
 BDIO = "375f315e-f2c4-11e9-2ef9-134f02f79e27"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
@@ -21,3 +22,6 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+FiniteDifferences = "0.12.32"
