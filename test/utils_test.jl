@@ -23,4 +23,7 @@
     @test AD.value.(uwarr1) == AD.value.(uwarr2)
     @test AD.err.(uwarr1) == AD.err.(uwarr2)
     @test uwarr1 ≈ uwarr2
+
+    # Propagate error using finite differences
+    @test CA.derivedobs_fd.([exp], uwarr1) ≈ exp.(uwarr1)
 end
