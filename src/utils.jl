@@ -22,10 +22,10 @@ for op in (:+, :-, :*, :/, :^, :atan, :hypot)
 end
 
 Base.isapprox(x::AD.uwreal, y::AD.uwreal; kargs...) = 
-    isapprox(AD.value(x), AD.value(y); kargs...) &&
+    isapprox(AD.value(err!(x)), AD.value(err!(y)); kargs...) &&
     isapprox(AD.err(x), AD.err(y); kargs...)
 Base.isapprox(x::AbstractArray{AD.uwreal}, y::AbstractArray{AD.uwreal}; kargs...) = 
-    isapprox(AD.value.(x), AD.value.(y); kargs...) &&
+    isapprox(AD.value.(err!.(x)), AD.value.(err!.(y)); kargs...) &&
     isapprox(AD.err.(x), AD.err.(y); kargs...)
 
 """

@@ -135,19 +135,13 @@ function eigvals_AD!(λ_t::AbstractVector{AD.uwreal}, Cₜ::AbstractArray{AD.uwr
     N_op = size(Cₜ, 2)
 
     # Compute eigenvectors (sorted in decreasing order of real part of eigenvalue)
-    _, v_t = LA.eigen(AD.value.(Cₜ[iₜ, :, :]), AD.value.(Cₜ[i_t₀, :, :]),
-                      sortby=(λ->-real(λ)))
+    λ, v = LA.eigen(AD.value.(Cₜ[iₜ, :, :]), AD.value.(Cₜ[i_t₀, :, :]),
+                    sortby=(λ->-real(λ)))
 
-    if v_t isa Matrix{Float64}
-        for i in 1:N_op
-            λ_t[i] = v_t[:, i]'*(Cₜ[iₜ, :, :]*v_t[:, i])
-        end
-    else
-        # If v_t is complex treat real and imaginary part seperately
-        for i in 1:N_op
-            λ_t[i] = (real(v_t[:, i])'*(Cₜ[iₜ, :, :]*real(v_t[:, i])) +
-                      imag(v_t[:, i])'*(Cₜ[iₜ, :, :]*imag(v_t[:, i])))
-        end
+    # Propagate error to eigenvalues
+    for i in 1:N_op
+        der = real(conj(v[:, i])*transpose(v[:, i]))
+        λ_t[i] = AD.addobs(vec(Cₜ[iₜ, :, :]), vec(der), λ[i])
     end
 end
 
