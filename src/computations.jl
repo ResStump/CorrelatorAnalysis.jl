@@ -138,6 +138,7 @@ function eigvals_AD!(λ_t::AbstractVector{AD.uwreal}, Cₜ::AbstractArray{AD.uwr
     λ, v = LA.eigen(AD.value.(Cₜ[iₜ, :, :]), AD.value.(Cₜ[i_t₀, :, :]),
                     sortby=(λ->-real(λ)))
 
+    # Propagate error to eigenvalues
     for i in 1:N_op
         der = real(conj(v[:, i])*transpose(v[:, i]))
         λ_t[i] = AD.addobs(vec(Cₜ[iₜ, :, :]), vec(der), λ[i])
