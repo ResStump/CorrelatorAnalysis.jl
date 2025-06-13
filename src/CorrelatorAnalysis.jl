@@ -4,6 +4,7 @@ import ADerrors as AD
 import BDIO
 import Dates
 import ForwardDiff as FD
+import FiniteDifferences as FDiff
 import LinearAlgebra as LA
 import LsqFit
 import PhysicalConstants.CODATA2018 as PCC18

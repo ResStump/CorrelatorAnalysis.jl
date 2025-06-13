@@ -40,6 +40,23 @@ function err!(a::AbstractArray{AD.uwreal})
 end
 
 """
+    derivedobs_fd(f::Function, as::AD.uwreal...; order=3, max_range=Inf)
+
+Compute the derived observable `f(as...)` where the error is propagated using finite
+differences. Only use this function if automatic differentiation cannot be used for `f`.
+"""
+function derivedobs_fd(f::Function, as::AD.uwreal...; order=3, max_range=Inf)
+    val = AD.value.(as)
+
+    # Compute the derivative using finite differences
+    fdm = FDiff.central_fdm(order, 1, max_range=max_range)
+    der = FDiff.grad(fdm, f, AD.value.(as)...)
+
+    # Return the derived observable
+    return AD.addobs(collect(as), collect(der), f(val...))
+end
+
+"""
     cov(a::AbstractVector{AD.uwreal}) -> C::Matrix{Float64}
 
 Compute the covariance matrix of the vector `a` using the window parameters that were
