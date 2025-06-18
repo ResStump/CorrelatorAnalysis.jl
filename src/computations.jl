@@ -647,21 +647,24 @@ Fit a constant function to the effective energy `E_eff` within the specified `pl
 
 ### Arguments
 - `E_eff::AbstractVector{AD.uwreal}`: The effective energy data.
-- `plateau_range`: The range of indices within `E_eff` to fit the constant function to.
-  It must be a `Vector` of length two of the form `[i_first, i_last]`.
+- `plateau_range`: The integer time range of `E_eff` to fit the constant function to.
+  It must be a `Vector` of length two of the form `[t_first, t_last]`.
 - `guess=1.0`: Initial guess for the constant value.
+- `index_offset`: The offset of the indices in `E_eff` to the (integer) time `t`.
+  Default is `1` which means that `E_eff` at `t` corresponds to `E_eff[t+1]`.
 - `kargs...`: Additional keyword arguments to be passed to the `fit` function.
 
 ### Returns
 `fit_result::FitResult`: The result of the constant fit. See the doc of the function `fit`
 for more information on its fields. 
 """
-function fit_plateau(E_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0, kargs...)
+function fit_plateau(E_eff::AbstractVector{AD.uwreal}, plateau_range; guess=1.0,
+                     index_offset=1, kargs...)
     # Fit to effective energy
     model(x, p) = @. p[1] + 0*x
     
     xdata = range(plateau_range...)
-    ydata = E_eff[xdata.+1]
+    ydata = E_eff[xdata.+index_offset]
     p0 = [guess]
 
     return fit(model, xdata, ydata, p0; kargs...)
