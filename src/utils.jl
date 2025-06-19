@@ -29,6 +29,29 @@ Base.isapprox(x::AbstractArray{AD.uwreal}, y::AbstractArray{AD.uwreal}; kargs...
     isapprox(AD.err.(x), AD.err.(y); kargs...)
 
 """
+    uwreal(data::AbstractVector, mcid::String, window=:auto; S=2.0, calc_err=true) -> a::AD.uwreal
+
+Create an `AD.uwreal` object from the input `data` vector. Specify an unique label `mcid`
+for the ensemble. The `window` parameter specifies the summation window for the Γ-method
+(`window=1` means autocorrelation is neglected). If it's set to `:auto` Ulli Wolff's
+automatic windowing procedure with the given parameter `S` (default is 2.0) is used.
+
+See also: `uwreal_array`.
+"""
+function uwreal(data::AbstractVector, mcid::String, window=:auto; S=2.0, calc_err=true)
+    # Add mcid to parms
+    add_mcid_to_parms!(mcid, window, S=S)
+
+    a = AD.uwreal(collect(data), mcid)
+
+    if calc_err
+        err!(a)
+    end
+
+    return a
+end
+
+"""
     uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last; S=2.0, calc_err=true) -> uwdata::Array{AD.uwreal}
 
 Create an array of `AD.uwreal` objects from the input `data` array which is assumed to have
@@ -37,6 +60,8 @@ an unique label `mcid` for the ensemble. The `window` parameter specifies the su
 window for the Γ-method (`window=1` means autocorrelation is neglected). If it's set to
 `:auto` Ulli Wolff's automatic windowing procedure with the given parameter `S`
 (default is 2.0) is used.
+
+See also: `uwreal`.
 """
 function uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last;
                       S=2.0, calc_err=true)
@@ -64,7 +89,7 @@ function uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:l
     end
 
     if calc_err
-        err!.(uwdata)
+        err!(uwdata)
     end
 
     return uwdata
