@@ -40,20 +40,48 @@ function err!(a::AbstractArray{AD.uwreal})
 end
 
 """
-    derivedobs_fd(f::Function, as::AD.uwreal...; order=3, max_range=Inf)
+    derivedobs_fd(f::Function, as...; order=3, max_range=Inf)
 
-Compute the derived observable `f(as...)` where the error is propagated using finite
-differences. Only use this function if automatic differentiation cannot be used for `f`.
+Compute the derived observable `f(as...)` where for the `a` in as that are `AD.uwreal` the
+error is propagated. The error propagation is done using finite differences. It's assumed
+that there is at least one `AD.uwreal` in `as`. Use `order` to specify the order of the
+finite difference method (default is 3) and `max_range` to specify the maximum range which
+the finite difference method can use (default is `Inf`).
+
+### Notes
+Only use this function if automatic differentiation cannot be used for `f`.
 """
-function derivedobs_fd(f::Function, as::AD.uwreal...; order=3, max_range=Inf)
-    val = AD.value.(as)
+function derivedobs_fd(f::Function, as...; order=3, max_range=Inf)
+    # Separate the `AD.uwreal` from the rest
+    uwreal_indices = [i for (i, a) in enumerate(as) if a isa AD.uwreal]
+    non_uwreal_indices = [i for (i, a) in enumerate(as) if !(a isa AD.uwreal)]
+    uwreal_args = as[uwreal_indices]
 
-    # Compute the derivative using finite differences
+    if isempty(uwreal_args)
+        throw(ArgumentError("No AD.uwreal arguments found in as."))
+    end
+
+    # Generate a function that takes only the AD.uwreal objects and returns f(as...)
+    f_uwreal = (uwreal_vals...) -> begin
+        args = Vector{Any}(undef, length(as))
+        for (i, idx) in enumerate(uwreal_indices)
+            args[idx] = uwreal_vals[i]
+        end
+        for (i, idx) in enumerate(non_uwreal_indices)
+            args[idx] = as[idx]
+        end
+        f(args...)
+    end
+
+    # Evaluate f
+    f_val = f_uwreal(AD.value.(uwreal_args)...)
+
+    # Compute the derivative using finite differences (only for uwreal)
     fdm = FDiff.central_fdm(order, 1, max_range=max_range)
-    der = FDiff.grad(fdm, f, AD.value.(as)...)
+    der = FDiff.grad(fdm, f_uwreal, AD.value.(uwreal_args)...)
 
     # Return the derived observable
-    return AD.addobs(collect(as), collect(der), f(val...))
+    return AD.addobs(collect(uwreal_args), collect(der), f_val)
 end
 
 """
