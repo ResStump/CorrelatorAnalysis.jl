@@ -144,3 +144,14 @@ function markov_chain(rng, N::Integer, μ::Real, σ::Real, τ::Real)
 end
 markov_chain(N::Integer, μ::Real, σ::Real, τ::Real) =
     markov_chain(Random.MersenneTwister(), N, μ, σ, τ)
+
+"""
+    bootstrap_to_uwreal(mean, samples, mcid) -> AD.uwreal
+
+Convert the bootstrap samples `samples` with mean `mean` to an `AD.uwreal` object with the same mean and error. Specify an unique label `mcid` for the ensemble.
+"""
+function bootstrap_to_uwreal(mean, samples, mcid)
+    # Scale up error and correct mean
+    samples = (samples .- Stats.mean(samples))*√length(samples) .+ mean
+    return CA.uwreal(samples, mcid, 1)
+end
