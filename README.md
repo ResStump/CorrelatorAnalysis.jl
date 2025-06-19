@@ -20,6 +20,6 @@ The folder `examples` contains Jupyter notebooks which show the basic functional
 
 The notebook `correlator_analysis_random.ipynb` shows the error analysis of a randomly generated meson like correlator with autocorrelation.
 
-The notebooks `correlator_analysis.ipynb` and `correlator_analysis_2.ipynb` repeats the same analysis for actual data of a pion correlator (two different ensembles with different number of configurations).
+The notebook `correlator_analysis.ipynb` repeats the same analysis for actual data of a pion correlator (two different ensembles with different number of configurations).
 
 In `GEVP_analysis.ipynb` a sample analysis of a correlator matrix by solving the generalized eigenvalue problem (GEVP) is shown.
