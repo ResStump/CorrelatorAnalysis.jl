@@ -67,6 +67,8 @@ an unique label `mcid` for the ensemble. The `window` parameter specifies the su
 window for the Γ-method (`window=1` means autocorrelation is neglected). If it's set to
 `:auto` Ulli Wolff's automatic windowing procedure with the given parameter `S`
 (default is 2.0) is used.
+
+See also: `uwreal`.
 """
 function uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:last;
                       S=2.0, calc_err=true)
@@ -94,7 +96,7 @@ function uwreal_array(data::AbstractArray, mcid::String, window=:auto, mc_dim=:l
     end
 
     if calc_err
-        err!.(uwdata)
+        err!(uwdata)
     end
 
     return uwdata
@@ -142,3 +144,14 @@ function markov_chain(rng, N::Integer, μ::Real, σ::Real, τ::Real)
 end
 markov_chain(N::Integer, μ::Real, σ::Real, τ::Real) =
     markov_chain(Random.MersenneTwister(), N, μ, σ, τ)
+
+"""
+    bootstrap_to_uwreal(mean, samples, mcid) -> AD.uwreal
+
+Convert the bootstrap samples `samples` with mean `mean` to an `AD.uwreal` object with the same mean and error. Specify an unique label `mcid` for the ensemble.
+"""
+function bootstrap_to_uwreal(mean, samples, mcid)
+    # Scale up error and correct mean
+    samples = (samples .- Stats.mean(samples))*√length(samples) .+ mean
+    return CA.uwreal(samples, mcid, 1)
+end
