@@ -12,6 +12,7 @@ import Plots
 import Random
 import SpecialFunctions as SF
 import Statistics as Stats
+import Measurements as M
 using LaTeXStrings
 import PrecompileTools
 

@@ -29,6 +29,13 @@ Base.isapprox(x::AbstractArray{AD.uwreal}, y::AbstractArray{AD.uwreal}; kargs...
     isapprox(AD.err.(x), AD.err.(y); kargs...)
 
 """
+    tomeas(a::AD.uwreal) -> M.measurement
+
+Convert an `AD.uwreal` object to a `Measurements.measurement` object.
+"""
+tomeas(a::AD.uwreal) = M.measurement(a.mean, CA.err!(a).err)
+
+"""
     uwreal(data::AbstractVector, mcid::String, window=:auto; S=2.0, calc_err=true) -> a::AD.uwreal
 
 Create an `AD.uwreal` object from the input `data` vector. Specify an unique label `mcid`
