@@ -33,7 +33,7 @@ Base.isapprox(x::AbstractArray{AD.uwreal}, y::AbstractArray{AD.uwreal}; kargs...
 
 Convert an `AD.uwreal` object to a `Measurements.measurement` object.
 """
-tomeas(a::AD.uwreal) = M.measurement(a.mean, CA.err!(a).err)
+tomeas(a::AD.uwreal) = M.measurement(a.mean, err!(a).err)
 
 """
     uwreal(data::AbstractVector, mcid::String, window=:auto; S=2.0, calc_err=true) -> a::AD.uwreal
@@ -153,5 +153,5 @@ Convert the bootstrap samples `samples` with mean `mean` to an `AD.uwreal` objec
 function bootstrap_to_uwreal(mean, samples, mcid)
     # Scale up error and correct mean
     samples = (samples .- Stats.mean(samples))*√length(samples) .+ mean
-    return CA.uwreal(samples, mcid, 1)
+    return uwreal(samples, mcid, 1)
 end
