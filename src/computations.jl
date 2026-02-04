@@ -262,7 +262,7 @@ end
 """
     overlaps_Z(Cₜ::Union{AbstractArray{<:Real, 3}, AbstractArray{<:AD.uwreal, 3}}, E_arr::Union{AbstractVector{<:Real}, AbstractVector{<:AD.uwreal}}, t::Int; t₀::Union{Int, Symbol}=:ceil_t_half, normalization::Symbol=:N_inf) -> Z_in::Array{Float64, 2}
 
-Compute the matrix of overlaps `Z_in = <Ω|Oᵢ|n>` of the operator `Oᵢ` with the `n'th`
+Compute the matrix of overlaps `Z_in = |<Ω|Oᵢ|n>|²` of the operator `Oᵢ` with the `n'th`
 eigenstates of the Hamiltonian. For that use the correlator matrix
 `Cₜ[t+1, i, j] = <Ω|Oᵢ(t)Oⱼ(0)^†|Ω>` and the energies `E_arr` of the lowest eigenstates.
 `Z_in` is computed for each operator `Oᵢ` and each eigenstate `n` for which the energy is

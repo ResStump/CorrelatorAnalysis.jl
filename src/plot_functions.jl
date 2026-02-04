@@ -155,7 +155,7 @@ function plot_herrorline!(ax::CM.Axis, E::AD.uwreal; color=:red, kargs...)
     err!(E)
 
     hlines_plot = CM.hlines!(ax, [E.mean]; color=color, kargs...)
-    hspan_plot = CM.hspan!(ax, [E.mean-E.err], [E.mean+E.err]; color=(color, 0.3), kargs...)
+    hspan_plot = CM.hspan!(ax, [E.mean-E.err], [E.mean+E.err]; color=(color, 0.3))
 
     # Bring error band to back
     CM.translate!(hspan_plot, 0, 0, -10)
