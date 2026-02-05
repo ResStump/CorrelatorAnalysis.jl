@@ -1,7 +1,10 @@
 # Overload base functions
 Base.abs(a::AD.uwreal) = a*sign(AD.value(a))
+Base.length(a::AD.uwreal) = 1
+Base.iterate(a::AD.uwreal) = (a, nothing)
+Base.iterate(a::AD.uwreal, state) = nothing
 
-for op in (:+, :-, :*, :/, :^, :atan, :hypot)
+for op in (:*, :/)
     @eval function Base.$op(a::AbstractArray{AD.uwreal}, b::AD.uwreal)
         r = similar(a)
         @inbounds for i in eachindex(a)
