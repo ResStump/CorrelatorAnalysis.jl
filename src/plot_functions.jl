@@ -181,7 +181,7 @@ plot_model(model, xdata::AbstractVector, parms::AbstractArray; kargs...) = begin
 end
 
 function plot_overlaps!(f::CM.Figure, Z_in::AbstractMatrix; n_range=:all,
-                        colors=Makie.wong_colors())
+                        operator_labels=nothing, colors=Makie.wong_colors())
     # Number of operators
     N_op = size(Z_in, 1)
 
@@ -200,18 +200,26 @@ function plot_overlaps!(f::CM.Figure, Z_in::AbstractMatrix; n_range=:all,
     # Flatten data
     bar_heights, bar_xpos, groups = vec(bar_heights), vec(bar_xpos), vec(groups)
 
+    if isnothing(operator_labels)
+        xticks = (1:N_op, [L"\mathcal{O}_{%$i}" for i in 1:N_op])
+        xticks_kargs = ()
+    else
+        xticks = (1:N_op, operator_labels)
+        xticks_kargs = (xticklabelrotation=45,)
+    end
+
     # Create Axis
-    ax = CM.Axis(f[1, 1], xlabel="Operator",
-                 ylabel=L"|\langle \Omega|\, \mathcal{O}_i \,|n \rangle|^2",
-                 xticks=(1:N_op, [L"\mathcal{O}_%$i" for i in 1:N_op]))
+    ax = CM.Axis(f[1, 1], xlabel=L"Operator $\mathcal{O}$",
+                 ylabel=L"|\langle \Omega|\mathcal{O}|n \rangle|^2", xticks=xticks;
+                 xticks_kargs...)
 
     # Plot histogram of overlaps
     color_grad = CM.cgrad(colors, n_levels)
     CM.barplot!(bar_xpos, bar_heights, stack=groups, color=color_grad[groups])
 
     # Add legend entry for each energy level
-    elements = [CM.PolyElement(polycolor=color_grad[n]) for n in n_range]
-    labels = [L"State $n=%$(i_n-1)$" for i_n in n_range]
+    elements = [CM.PolyElement(polycolor=color_grad[n]) for n in reverse(n_range)]
+    labels = [L"State $n=%$(i_n-1)$" for i_n in reverse(n_range)]
     CM.Legend(f[1, 2], elements, labels)
 
     return ax
