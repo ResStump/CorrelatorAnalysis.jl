@@ -409,42 +409,101 @@ struct FitResult{C, P}
 end
 
 """
-    p_value(χ²::Function, data::AbstractVector{AD.uwreal}, p::AbstractArray{<:Real}, W::AbstractMatrix{<:Real}, χ²_obs::Real, dof::Integer; fit_type=nothing, p_value_type=nothing, N_mc=10^5, rng=Random.GLOBAL_RNG) -> p_val
+    fit_error(χ²::Function, p::AbstractArray{<:Real}, data::AbstractVector{AD.uwreal}, W::AbstractMatrix{<:Real}; gof=false, p_value_type=nothing, fit_type=nothing, cov_matrix=nothing, N_mc=10^5, rng=Random.GLOBAL_RNG) -> p_uwreal [, χ²_exp, p_value]
 
-Compute the p-value for the chi-square function `χ²`, the data `data` and the
-optimized fit parameters `p`.
+Return the fit parameters `p` as `AD.uwreal` for the chi-square function `χ²`, the data
+`data` and the weight matrix `W`. If `gof=true`, also return the expectation value of `χ²`
+at `p` and the p-value of the fit.
 
 ### Arguments
-- `χ²(p::Vector, d:Vector)`: Function of the parameters `p` and the data `d`. The function is expected to have the following form \\
+- `χ²(p::Vector, d:Vector)`: Function of the parameters `p` and the data `d`. The function
+  is expected to have the following form \\
   `χ²(p, d) = sum_{ij} [d_i - f_i(p)]W_ij[d_j - f_j(p)]` \\
   for the model f_i(p).
-- `data::AbstractVector{AD.uwreal}`: The data for which the `χ²` function was
-  optimized.
 - `p::AbstractArray{<:Real}`: The optimized fit parameters.
+- `data::AbstractVector{AD.uwreal}`: The data for which the `χ²` function was optimized.
 - `W::AbstractMatrix{<:Real}`: The weight matrix in `χ²`.
-- `χ²_obs::Real`: The χ² value for the optimized parameters.
-- `dof::Integer`: The number of degrees of freedom.
+- `gof`: Whether to compute the goodness of fit (gof) metrics; the expectation value of `χ²`
+  and the p-value. Default is `false`.
 - `p_value_type`: Sets how the p-value is computed. It's either `:correlated` or `:general`.
   The first case applies to a correlated fit, then the p-value can be computed using an
-  upper incomplete gamma function. For a fit with a different weight matrix `W`
+  upper incomplete gamma function. For a fit with a different weight matrix `W`,
   `p_value_type=:general` should be used. Then the p-value is computed using Monte Carlo
   integration. Default is `nothing`. Either `fit_type` or `p_value_type` have to be given.
 - `fit_type`: The type of fit used. Possible choises are `:correlated`, `:correlated_posdef`
   and `:uncorrelated`. The first has the same effect as setting `p_value_type=:correlated`.
   The other two correspond to `p_value_type=:general`. Default is `nothing`.
   Either `fit_type` or `p_value_type` have to be given.
-- `N_mc`: The number of Monte Carlo samples used for the integration. Default is `10^5`.
-- `rng`: The random number generator. Default is `Random.GLOBAL_RNG`.
+- `cov_matrix`: The covariance matrix of the data. If not given, it is computed using the
+  `cov` function. Only used if `gof=true`.
+- `N_mc`: The number of Monte Carlo samples used for the computation of the p-value. Default
+  is `10^5`.
+- `rng`: The random number generator used for the computation of the p-value. Default is
+  `Random.GLOBAL_RNG`.
 
 ### Method
-The p-value is computed as described in arXiv:2209.14188 for correlated and uncorrelated
-fits. \\
-The function `fit` allows to use the approximated covariance matrix computed with 
-`posdef_cov`. In that case `W` is treated as a general weight matrix to correct for this.
+The expectation value of `χ²` and the p-value are computed as described in arXiv:2209.14188
+for correlated and uncorrelated fits. \\
+The function `fit`, which calles this function, allows to use the approximated covariance
+matrix computed with `posdef_cov`. In that case `W` is treated as a general weight matrix to correct for this.
 """
-function p_value(χ²::Function, data::AbstractVector{AD.uwreal}, p::AbstractArray{<:Real},
-                 W::AbstractMatrix{<:Real}, χ²_obs::Real, dof::Integer;
-                 p_value_type=nothing,  fit_type=nothing, N_mc=10^5, rng=Random.GLOBAL_RNG)
+function fit_error(χ²::Function, p::AbstractArray{<:Real}, data::AbstractVector{AD.uwreal},
+                   W::AbstractMatrix{<:Real}; gof=false, p_value_type=nothing,
+                   fit_type=nothing, cov_matrix=nothing, N_mc=10^5, rng=Random.GLOBAL_RNG)
+    # Compute error of parameters (code is adapted from AD.fit_error)
+    n = length(p)   # Number of fit parameters
+    m = length(data) # Number of data
+
+    xav = Vector{Float64}(undef, n+m)
+    for i in 1:n
+        xav[i] = p[i]
+    end
+    for i in n+1:n+m
+        xav[i] = data[i-n].mean
+    end
+
+    ccsq(x::Vector) = χ²(view(x, 1:n), view(x, n+1:n+m)) 
+    if (n+m < 4)
+        cfg = FD.HessianConfig(ccsq, xav, FD.Chunk{1}());
+    else
+        cfg = FD.HessianConfig(ccsq, xav, FD.Chunk{4}());
+    end
+                
+    hess = Array{Float64}(undef, n+m, n+m)
+    FD.hessian!(hess, ccsq, xav, cfg)
+    
+    hm = view(hess, 1:n, 1:n)
+    sm = view(hess, 1:n, n+1:n+m)
+    hinv = LA.pinv(hm)
+    grad = - hinv * sm
+    
+    p_uwreal = AD.addobs(data, grad, p)
+
+    if !gof
+        return p_uwreal
+    end
+
+    # Compute covariance matrix of data if not given
+    if isnothing(cov_matrix)
+        cov_matrix = cov(data)
+    end
+
+    # Compute expectation value of χ²
+    Lm = LA.cholesky(LA.Symmetric(W))
+    Li = LA.inv(Lm.L)
+    
+    sm_ = sm * Li'
+    
+    maux = sm_ * sm_'
+    hi   = LA.pinv(maux)
+    Px   = W - sm' * hi * sm
+
+    χ²_exp = LA.tr(Px*cov_matrix)
+
+    # Compute p-value
+    χ²_obs = χ²(p, AD.value.(data))
+    dof = length(data) - length(p)
+
     # Set how to compute p-value, first based on `p_val_type` then on `fit_type`
     if isnothing(p_value_type)
         if fit_type in [:uncorrelated, :correlated_posdef]
@@ -461,44 +520,11 @@ function p_value(χ²::Function, data::AbstractVector{AD.uwreal}, p::AbstractArr
 
     if p_value_type == :correlated
         # Assumes that the weight matrix `W` is the inverse of the covariance matrix
-        p_val = SF.gamma(dof/2, χ²_obs/2)/SF.gamma(dof/2)
+        p_value = SF.gamma(dof/2, χ²_obs/2)/SF.gamma(dof/2)
     elseif p_value_type == :general
-        # Here follow notation in ADerrors
-
-        # Compute Hessian matrix of χ²
-        n = length(p)   # Number of fit parameters
-        m = length(data) # Number of data
-
-        xav = zeros(Float64, n+m)
-        for i in 1:n
-            xav[i] = p[i]
-        end
-        for i in n+1:n+m
-            xav[i] = data[i-n].mean
-        end
-        ccsq(x::Vector) = χ²(view(x, 1:n), view(x, n+1:n+m)) 
-        if (n+m < 4)
-            cfg = FD.HessianConfig(ccsq, xav, FD.Chunk{1}());
-        else
-            cfg = FD.HessianConfig(ccsq, xav, FD.Chunk{4}());
-        end
-            
-        hess = Array{Float64}(undef, n+m, n+m)
-        FD.hessian!(hess, ccsq, xav, cfg)
-
         # Compute ν matrix (see arXiv:2209.14188)
-        Lm = LA.cholesky(LA.Symmetric(W))
-        Li = LA.inv(Lm.L)
-        
-        hm = view(hess, 1:n, n+1:n+m)
-        sm = hm * Li'
-        
-        maux = sm * sm'
-        hi = LA.pinv(maux)
-        Pw = hm' * hi * hm
-
-        C = cov(data)
-        sqrtC = √(C)
+        Pw = sm' * hi * sm
+        sqrtC = √(cov_matrix)
         ν = sqrtC * (W - Pw) * sqrtC
 
         # Positive eigenvalues of ν
@@ -514,12 +540,12 @@ function p_value(χ²::Function, data::AbstractVector{AD.uwreal}, p::AbstractArr
         # Compute integral over θ using MC with normaly distributed random numbers
         θ(z) = Float64(sum(@. λ_pos*z^2) ≥ χ²_obs)
         z_arr = randn(rng, (N_ν, N_mc))
-        p_val = sum(θ.(eachcol(z_arr)))/N_mc
+        p_value = sum(θ.(eachcol(z_arr)))/N_mc
     else
         throw(ArgumentError("unknown p-value type."))
     end
 
-    return p_val
+    return p_uwreal, χ²_exp, p_value
 end
 
 """
@@ -595,6 +621,7 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
     end
 
     # Set weights and cost function
+    C = nothing
     if fit_type == :uncorrelated
         # Weights: Diag matrix of inverse of variances
         W = LA.diagm([(@. 1/ydata_err^2)...,
@@ -607,7 +634,8 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
         # Weights
         if fit_type == :correlated
             # Covariance matrix
-            W_ = inv(cov(ydata_))
+            C = cov(ydata_)
+            W_ = inv(C)
         elseif fit_type == :correlated_posdef
             # "Positive definite" covariance matrix
             W_ = inv(posdef_cov(ydata_))
@@ -633,7 +661,7 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
     end
 
     # Perform fit
-    fit_result = LsqFit.lmfit(cost, p0, W)
+    fit_result_ = LsqFit.lmfit(cost, p0, W)
 
     # Χ² function for propagating error to fit parameters
     function χ²(p, d)
@@ -647,24 +675,23 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
                                  for (i, (μ, σ)) in gaussian_priors]...]
 
     # Observed χ² and number of degrees of freedom
-    χ²_obs = χ²(fit_result.param, AD.value.(ydata_extended))
+    χ²_obs = χ²(fit_result_.param, AD.value.(ydata_extended))
     dof = N_y + N_priors - length(p0)
 
     # Compute fit error, and reduced χ² and p-value if gof (goodness of fit) is true
     if gof
-        fitp, χ²_exp = AD.fit_error(χ², fit_result.param, ydata_extended, parms.wpm,
-                                    chi_exp=true)
+        fitp, χ²_exp, p_value = fit_error(χ², fit_result_.param, ydata_extended,
+                                        W, gof=true, fit_type=fit_type, cov_matrix=C;
+                                        kargs...)
 
-        p_val = p_value(χ², ydata_extended, AD.value.(fitp), W, χ²_obs, dof,
-                        fit_type=fit_type; kargs...)
         χ²_red = χ²_obs/χ²_exp
     else
-        fitp = AD.fit_error(χ², fit_result.param, ydata_extended, parms.wpm, chi_exp=false)
+        fitp = fit_error(χ², fit_result_.param, ydata_extended, W, gof=false)
         χ²_red = nothing
-        p_val = nothing
+        p_value = nothing
     end
 
-    fit_result = FitResult(fitp, χ²_obs, χ²_red, dof, p_val)
+    fit_result = FitResult(fitp, χ²_obs, χ²_red, dof, p_value)
     return fit_result
 end
 
