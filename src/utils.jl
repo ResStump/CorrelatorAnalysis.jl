@@ -151,7 +151,8 @@ markov_chain(N::Integer, μ::Real, σ::Real, τ::Real) =
 """
     bootstrap_to_uwreal(mean, samples, mcid) -> AD.uwreal
 
-Convert the bootstrap samples `samples` with mean `mean` to an `AD.uwreal` object with the same mean and error. Specify an unique label `mcid` for the ensemble.
+Convert the bootstrap samples `samples` with mean `mean` to an `AD.uwreal` object with the
+same mean and error. Specify an unique label `mcid` for the ensemble.
 """
 function bootstrap_to_uwreal(mean, samples, mcid)
     # Scale up error and correct mean
