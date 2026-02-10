@@ -156,7 +156,7 @@ function plot_herrorline!(ax::CM.Axis, E::AD.uwreal; color=:red, linestyle=:soli
     err!(E)
 
     hlines_plot = CM.hlines!(ax, [E.mean]; color=color, linestyle=linestyle, kargs...)
-    hspan_plot = CM.hspan!(ax, [E.mean-E.err], [E.mean+E.err]; color=(color, 0.3))
+    hspan_plot = CM.hspan!(ax, [E.mean-E.err], [E.mean+E.err]; color=(color, 0.3), kargs...)
 
     # Bring error band to back
     CM.translate!(hspan_plot, 0, 0, -10)
@@ -167,7 +167,7 @@ plot_herrorline!(E::AD.uwreal; kargs...) =
     plot_herrorline!(CM.current_axis(), E; kargs...)
 
 function plot_model!(ax::CM.Axis, model, xdata_range::AbstractVector, parms::AbstractArray;
-                     errorband=false, n_points=20, color=:red, linestyle=:solid, kargs...)
+                     errorband=false, n_points=10, color=:red, linestyle=:solid, kargs...)
     if parms isa AbstractVector{AD.uwreal}
         err!.(parms)
         parms_values = AD.value.(parms)
@@ -182,13 +182,13 @@ function plot_model!(ax::CM.Axis, model, xdata_range::AbstractVector, parms::Abs
                            linestyle=linestyle, kargs...)
 
     if errorband
-        xdata = range(xdata_range..., length=n_points)
+        xdata = range(xdata_range[1], xdata_range[end], length=n_points)
         ydata = model(xdata, parms)
         yvals = AD.value.(ydata)
         yerr = AD.err.(err!.(ydata))
 
         errorband_plot = CM.band!(ax, xdata, yvals - yerr, yvals + yerr; color=(color, 0.3),
-                                  kargs...)
+                                  label="Fit result", kargs...)
 
         # Bring error band to back
         CM.translate!(errorband_plot, 0, 0, -10)
