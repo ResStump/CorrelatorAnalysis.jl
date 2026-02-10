@@ -134,11 +134,12 @@ plot_effective_energy(E_eff::AbstractVector{AD.uwreal}; kargs...) = begin
 end
 
 function plot_error_rectangle!(ax::CM.Axis, E::AD.uwreal, plateau_range; color=:red,
-                               kargs...)
+                               linestyle=:solid, kargs...)
     # Compute error
     err!(E)
 
-    lines_plot = CM.lines!(ax, plateau_range, [E.mean]; color=color, kargs...)
+    lines_plot = CM.lines!(ax, plateau_range, [E.mean]; color=color, linestyle=linestyle,
+                           kargs...)
     errorband_plot = CM.band!(ax, plateau_range, E.mean-E.err, E.mean+E.err;
                               color=(color, 0.3), kargs...)
 
@@ -150,11 +151,11 @@ end
 plot_error_rectangle!(E::AD.uwreal, plateau_range; kargs...) = 
     plot_error_rectangle!(CM.current_axis(), E, plateau_range; kargs...)
 
-function plot_herrorline!(ax::CM.Axis, E::AD.uwreal; color=:red, kargs...)
+function plot_herrorline!(ax::CM.Axis, E::AD.uwreal; color=:red, linestyle=:solid, kargs...)
     # Compute error
     err!(E)
 
-    hlines_plot = CM.hlines!(ax, [E.mean]; color=color, kargs...)
+    hlines_plot = CM.hlines!(ax, [E.mean]; color=color, linestyle=linestyle, kargs...)
     hspan_plot = CM.hspan!(ax, [E.mean-E.err], [E.mean+E.err]; color=(color, 0.3))
 
     # Bring error band to back
@@ -166,9 +167,32 @@ plot_herrorline!(E::AD.uwreal; kargs...) =
     plot_herrorline!(CM.current_axis(), E; kargs...)
 
 function plot_model!(ax::CM.Axis, model, xdata_range::AbstractVector, parms::AbstractArray;
-                     kargs...)    
-    lines_plot = CM.lines!(ax, xdata_range[1]..xdata_range[end], xdata -> model(xdata, parms),
-                           label="Fit result"; kargs...)
+                     errorband=false, n_points=20, color=:red, linestyle=:solid, kargs...)
+    if parms isa AbstractVector{AD.uwreal}
+        err!.(parms)
+        parms_values = AD.value.(parms)
+    elseif errorband && !(parms isa AbstractVector{AD.uwreal})
+        throw(ArgumentError("To plot error bars, `parms` must be an array of `AD.uwreal`."))
+    else
+        parms_values = parms
+    end
+
+    lines_plot = CM.lines!(ax, xdata_range[1]..xdata_range[end], 
+                           x -> model(x, parms_values); label="Fit result", color=color,
+                           linestyle=linestyle, kargs...)
+
+    if errorband
+        xdata = range(xdata_range..., length=n_points)
+        ydata = model(xdata, parms)
+        yvals = AD.value.(ydata)
+        yerr = AD.err.(err!.(ydata))
+
+        errorband_plot = CM.band!(ax, xdata, yvals - yerr, yvals + yerr; color=(color, 0.3),
+                                  kargs...)
+
+        # Bring error band to back
+        CM.translate!(errorband_plot, 0, 0, -10)
+    end
 
     return ax, lines_plot
 end
