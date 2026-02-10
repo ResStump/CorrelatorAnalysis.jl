@@ -423,6 +423,8 @@ at `p` and the p-value of the fit.
 - `p::AbstractArray{<:Real}`: The optimized fit parameters.
 - `data::AbstractVector{AD.uwreal}`: The data for which the `χ²` function was optimized.
 - `W::AbstractMatrix{<:Real}`: The weight matrix in `χ²`.
+
+### Keyword Arguments
 - `gof`: Whether to compute the goodness of fit (gof) metrics; the expectation value of `χ²`
   and the p-value. Default is `false`.
 - `p_value_type`: Sets how the p-value is computed. It's either `:correlated` or `:general`.
@@ -568,9 +570,10 @@ automatically propagated to the fit parameters.
 - `gaussian_priors`: A `Dict{<:Integer, AD.uwreal}` or `Dict{<:Integer, <:AbstractVector}`
   which contains gaussian priors for the fit. The key must be the index of the corresponding
   parameter. In the first case the mean `μ` and error `σ` of the `AD.uwreal` object is used, 
-  in the second case the `AbstractVector` is assumed to be of the form `[μ, σ]`.
+  in the second case the `AbstractVector` is assumed to be of the form `[μ, σ]`. Using
+  both `AD.uwreal`s and `AbstractVector`s in the same `Dict` is allowed.
   For each key `i` in the `Dict` the term `(p[i] - μ)²/σ²` is added to the chi-square
-  function.
+  function. Default is `nothing` (i.e. no priors).
 - `gof`: Whether to compute the goodness of fit (gof) metrics χ²_red and the p-value.
   Default is false.
 
@@ -603,17 +606,26 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
 
     # Define prior function
     if !isnothing(gaussian_priors)
-        # Bring priors in correct format
-        if typeof(gaussian_priors) <: Dict{<:Integer, AD.uwreal}
-            gaussian_priors = Dict(k => [AD.value(a), AD.err(err!(a))]
-                                   for (k, a) in gaussian_priors)
-        elseif !(typeof(gaussian_priors) <: Dict{<:Integer, <:AbstractVector})
-            throw(ArgumentError("gaussian_priors must be a Dict{<:Integer, AD.uwreal}, "*
-                                "Dict{<:Integer, <:AbstractVector} or nothing."))
+        if !(gaussian_priors isa Dict{<:Integer, <:Union{<:AbstractVector, <:AD.uwreal}})
+            throw(ArgumentError("gaussian_priors must be a "*
+                  "Dict{<:Integer, Union{<:AbstractVector, <:AD.uwreal}} or nothing."))
         end
-        
-        prior = (p) -> [(p[i] - μ)/σ for (i, (μ, σ)) in gaussian_priors]
-        N_priors = length(gaussian_priors)
+
+        # Bring priors in correct format
+        gaussian_priors_ = Dict{Int, Vector{Float64}}()
+        for (key, prior) in gaussian_priors
+            if prior isa AbstractVector
+                if length(prior) != 2
+                    throw(ArgumentError("If the priors are given as AbstractVectors, they "*
+                                        "must be of length 2 and of the form [μ, σ]."))
+                end
+                gaussian_priors_[key] = Float64.(prior)
+            elseif !(prior isa AD.uwreal)
+                gaussian_priors_[key] = [AD.value(prior), AD.err(err!(prior))]
+            end
+        end        
+        prior = (p) -> [(p[i] - μ)/σ for (i, (μ, σ)) in gaussian_priors_]
+        N_priors = length(gaussian_priors_)
     else
         gaussian_priors = Dict{Int, Vector{Float64}}()
         prior = (p) -> []
