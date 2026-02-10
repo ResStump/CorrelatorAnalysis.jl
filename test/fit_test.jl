@@ -157,8 +157,7 @@ end
     ydata = Cₜ_folded[xdata.+1]
 
     p0 = [7e-3, 0.25]
-    fit_result = CA.fit(corr_model, xdata, ydata, p0, fit_type=:uncorrelated,
-                                gof=false)
+    fit_result = CA.fit(corr_model, xdata, ydata, p0, fit_type=:uncorrelated, gof=false)
     (A_folded, am_folded_fit) = fit_result.param
     CA.err!(A_folded)
     m_folded_fit = CA.err!(am_folded_fit/a)
@@ -167,9 +166,25 @@ end
     @test AD.err(m_folded_fit) ≈ 1.5926570085408367
     @test AD.value(A_folded) ≈ 0.006503071705487689
     @test AD.err(A_folded) ≈ 0.0001060639274430725
+
+    # Fit with fit_type=:correlated_posdef and using priors
+    gaussian_priors = Dict(1=>[0.006, 0.001], 2=>AD.uwreal([0.27, 0.05], "A"))
+    fit_result = CA.fit(corr_model, xdata, ydata, p0, fit_type=:correlated_posdef, gof=true,
+                        gaussian_priors=gaussian_priors, N_mc=10^7,
+                        rng=Random.MersenneTwister(154))
+    (A_folded, am_folded_fit) = fit_result.param
+    CA.err!(A_folded)
+    m_folded_fit = CA.err!(am_folded_fit/a)
+
+    @test AD.value(m_folded_fit) ≈ 657.6106561479324
+    @test AD.err(m_folded_fit) ≈ 1.4853571745430834
+    @test AD.value(A_folded) ≈ 0.006484872018155086
+    @test AD.err(A_folded) ≈ 0.00010023801982328459
+    @test fit_result.χ²_red ≈ 0.8911271598175942
+    @test ≈(fit_result.p_value, 0.6641139, rtol=1e-3)
 end
 
-@testset "p-value" begin
+@testset "Goodness of fit metrics" begin
     # Creat random correlator
     # (with large number of cnfgs to get positive definite covariance matrix)
     rng = Random.MersenneTwister(154)
@@ -198,15 +213,25 @@ end
     # Perform correlated fit and compute p-value once with exact formula and once with 
     # general formula using MC
     plateau_range_folded = [2, 6]
-    p_value_exact = CA.fit_plateau(am_eff_folded, plateau_range_folded,
-                                   fit_type=:correlated, gof=true,
-                                   p_value_type=:correlated).p_value
-    p_value_general = CA.fit_plateau(am_eff_folded, plateau_range_folded,
-                                     fit_type=:correlated, gof=true,
-                                     p_value_type=:general, N_mc=10^6, rng=rng).p_value
+    fit_result1 = CA.fit_plateau(am_eff_folded, plateau_range_folded, fit_type=:correlated,
+                                 gof=true, p_value_type=:correlated)
+    fit_result2 = CA.fit_plateau(am_eff_folded, plateau_range_folded, fit_type=:correlated,
+                                 gof=true, p_value_type=:general, N_mc=10^7, rng=rng)
+
+    # Check that reduced χ² is approximately equal to observed χ²/dof
+    @test fit_result1.χ²_red ≈ fit_result1.χ²_obs/fit_result1.dof
 
     # Compare p-values to 3 decimal palces
-    @test abs(p_value_exact - p_value_general) < 1e-3
+    p_value_exact = fit_result1.p_value
+    p_value_general = fit_result2.p_value
+    @test ≈(p_value_exact, p_value_general, rtol=1e-3)
+
+    # Perform fit using posdef_cov for covariance matrix and check χ²_red and p-value
+    fit_result_posdef = CA.fit_plateau(am_eff_folded, plateau_range_folded,
+                                       fit_type=:correlated_posdef, gof=true, N_mc=10^7,
+                                       rng=rng)
+    @test fit_result_posdef.χ²_red ≈ 1.0513393985175175
+    @test ≈(fit_result_posdef.p_value, 0.3769536, rtol=1e-3)
 end
 
 @testset "GEVP" begin
