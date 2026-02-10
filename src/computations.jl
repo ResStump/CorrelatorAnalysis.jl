@@ -40,7 +40,7 @@ function err!(a::AbstractArray{AD.uwreal})
 end
 
 """
-    derivedobs_fd(f::Function, as...; order=3, max_range=Inf)
+    derivedobs_fd(f, as...; order=3, max_range=Inf)
 
 Compute the derived observable `f(as...)` where for the `a` in as that are `AD.uwreal` the
 error is propagated. The error propagation is done using finite differences. It's assumed
@@ -51,7 +51,7 @@ the finite difference method can use (default is `Inf`).
 ### Notes
 Only use this function if automatic differentiation cannot be used for `f`.
 """
-function derivedobs_fd(f::Function, as...; order=3, max_range=Inf)
+function derivedobs_fd(f, as...; order=3, max_range=Inf)
     # Separate the `AD.uwreal` from the rest
     uwreal_indices = [i for (i, a) in enumerate(as) if a isa AD.uwreal]
     non_uwreal_indices = [i for (i, a) in enumerate(as) if !(a isa AD.uwreal)]
@@ -409,7 +409,7 @@ struct FitResult{C, P}
 end
 
 """
-    fit_error(χ²::Function, p::AbstractArray{<:Real}, data::AbstractVector{AD.uwreal}, W::AbstractMatrix{<:Real}; gof=false, p_value_type=nothing, fit_type=nothing, cov_matrix=nothing, N_mc=10^5, rng=Random.GLOBAL_RNG) -> p_uwreal [, χ²_exp, p_value]
+    fit_error(χ², p::AbstractArray{<:Real}, data::AbstractVector{AD.uwreal}, W::AbstractMatrix{<:Real}; gof=false, p_value_type=nothing, fit_type=nothing, cov_matrix=nothing, N_mc=10^5, rng=Random.GLOBAL_RNG) -> p_uwreal [, χ²_exp, p_value]
 
 Return the fit parameters `p` as `AD.uwreal` for the chi-square function `χ²`, the data
 `data` and the weight matrix `W`. If `gof=true`, also return the expectation value of `χ²`
@@ -449,7 +449,7 @@ for correlated and uncorrelated fits. \\
 The function `fit`, which calles this function, allows to use the approximated covariance
 matrix computed with `posdef_cov`. In that case `W` is treated as a general weight matrix to correct for this.
 """
-function fit_error(χ²::Function, p::AbstractArray{<:Real}, data::AbstractVector{AD.uwreal},
+function fit_error(χ², p::AbstractArray{<:Real}, data::AbstractVector{AD.uwreal},
                    W::AbstractMatrix{<:Real}; gof=false, p_value_type=nothing,
                    fit_type=nothing, cov_matrix=nothing, N_mc=10^5, rng=Random.GLOBAL_RNG)
     # Compute error of parameters (code is adapted from AD.fit_error)
@@ -551,7 +551,7 @@ function fit_error(χ²::Function, p::AbstractArray{<:Real}, data::AbstractVecto
 end
 
 """
-    fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::AbstractArray; fit_type=:correlated_posdef, gaussian_priors=nothing, gof=false, kargs...) -> fit_result::FitResult
+    fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal}, p0::AbstractArray; fit_type=:correlated_posdef, gaussian_priors=nothing, gof=false, kargs...) -> fit_result::FitResult
 
 Perform a fit of the model function `model` to data `(xdata, ydata)`. The error is
 automatically propagated to the fit parameters.
@@ -588,7 +588,7 @@ It has the following fields:
 - `p_value`: P-value of the fit computed as described in arXiv:2209.14188. See the doc of
   the function `p_value` for more information.
 """
-function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
+function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
              p0::AbstractArray; fit_type=:correlated_posdef,
              gaussian_priors=nothing, gof=false, kargs...)
     # Compute error

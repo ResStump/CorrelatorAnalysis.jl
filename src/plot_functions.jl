@@ -165,8 +165,8 @@ end
 plot_herrorline!(E::AD.uwreal; kargs...) =
     plot_herrorline!(CM.current_axis(), E; kargs...)
 
-function plot_model!(ax::CM.Axis, model::Function, xdata_range::AbstractVector,
-                     parms::AbstractArray; kargs...)    
+function plot_model!(ax::CM.Axis, model, xdata_range::AbstractVector, parms::AbstractArray;
+                     kargs...)    
     lines_plot = CM.lines!(ax, xdata_range[1]..xdata_range[end], xdata -> model(xdata, parms),
                            label="Fit result"; kargs...)
 
