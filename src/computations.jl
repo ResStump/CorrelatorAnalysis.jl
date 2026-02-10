@@ -606,9 +606,9 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
 
     # Define prior function
     if !isnothing(gaussian_priors)
-        if !(gaussian_priors isa Dict{<:Integer, <:Union{<:AbstractVector, <:AD.uwreal}})
-            throw(ArgumentError("gaussian_priors must be a "*
-                  "Dict{<:Integer, Union{<:AbstractVector, <:AD.uwreal}} or nothing."))
+        if !(gaussian_priors isa Dict{<:Integer, <:Any})
+            throw(ArgumentError("gaussian_priors must be a Dict containing AD.uwreals or "*
+                                "AbstractVectors, or nothing."))
         end
 
         # Bring priors in correct format
@@ -616,16 +616,20 @@ function fit(model::Function, xdata::AbstractArray, ydata::AbstractArray{AD.uwre
         for (key, prior) in gaussian_priors
             if prior isa AbstractVector
                 if length(prior) != 2
-                    throw(ArgumentError("If the priors are given as AbstractVectors, they "*
+                    throw(ArgumentError("if the priors are given as AbstractVectors, they "*
                                         "must be of length 2 and of the form [μ, σ]."))
                 end
                 gaussian_priors_[key] = Float64.(prior)
-            elseif !(prior isa AD.uwreal)
+            elseif prior isa AD.uwreal
                 gaussian_priors_[key] = [AD.value(prior), AD.err(err!(prior))]
+            else
+                throw(ArgumentError("the priors must be given as AD.uwreal or "*
+                                    "AbstractVectors."))
             end
-        end        
-        prior = (p) -> [(p[i] - μ)/σ for (i, (μ, σ)) in gaussian_priors_]
-        N_priors = length(gaussian_priors_)
+        end
+        gaussian_priors = gaussian_priors_
+        prior = (p) -> [(p[i] - μ)/σ for (i, (μ, σ)) in gaussian_priors]
+        N_priors = length(gaussian_priors)
     else
         gaussian_priors = Dict{Int, Vector{Float64}}()
         prior = (p) -> []
