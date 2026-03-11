@@ -576,6 +576,8 @@ automatically propagated to the fit parameters.
   function. Default is `nothing` (i.e. no priors).
 - `gof`: Whether to compute the goodness of fit (gof) metrics χ²_red and the p-value.
   Default is false.
+- `priors_keep_corr`: Whether to keep the correlation between the priors and the data in the
+  fit. Only relevant if `gaussian_priors` contains `AD.uwreal`s. Default is false.
 
 ### Returns
 `fit_result`: A `FitResult` object containing the fit parameters and goodness of fit metrics.
@@ -590,7 +592,7 @@ It has the following fields:
 """
 function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
              p0::AbstractArray; fit_type=:correlated_posdef,
-             gaussian_priors=nothing, gof=false, kargs...)
+             gaussian_priors=nothing, gof=false, priors_keep_corr=false, kargs...)
     # Compute error
     err!.(ydata)
 
@@ -612,26 +614,25 @@ function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
         end
 
         # Bring priors in correct format
-        gaussian_priors_ = Dict{Int, Vector{Float64}}()
+        gaussian_priors_ = Dict{Int, AD.uwreal}()
         for (key, prior) in gaussian_priors
             if prior isa AbstractVector
                 if length(prior) != 2
                     throw(ArgumentError("if the priors are given as AbstractVectors, they "*
                                         "must be of length 2 and of the form [μ, σ]."))
                 end
-                gaussian_priors_[key] = Float64.(prior)
+                gaussian_priors_[key] = err!(AD.uwreal(prior, "_prior$key"))
             elseif prior isa AD.uwreal
-                gaussian_priors_[key] = [AD.value(prior), AD.err(err!(prior))]
+                gaussian_priors_[key] = err!(prior)
             else
                 throw(ArgumentError("the priors must be given as AD.uwreal or "*
                                     "AbstractVectors."))
             end
         end
-        gaussian_priors = gaussian_priors_
-        prior = (p) -> [(p[i] - μ)/σ for (i, (μ, σ)) in gaussian_priors]
-        N_priors = length(gaussian_priors)
+        prior = (p) -> [(p[i] - a.mean)/a.err for (i, a) in gaussian_priors_]
+        N_priors = length(gaussian_priors_)
     else
-        gaussian_priors = Dict{Int, Vector{Float64}}()
+        gaussian_priors_ = Dict{Int, AD.uwreal}()
         prior = (p) -> []
         N_priors = 0
     end
@@ -641,7 +642,7 @@ function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
     if fit_type == :uncorrelated
         # Weights: Diag matrix of inverse of variances
         W = LA.diagm([(@. 1/ydata_err^2)...,
-                      (1/σ^2 for (_, σ) in values(gaussian_priors))...])
+                      [1/a.err^2 for a in values(gaussian_priors_)]...])
 
         # Cost function
         u = @. 1/ydata_err
@@ -660,7 +661,7 @@ function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
 
         # Extend weight matrix with variance of priors
         if N_priors != 0
-            W_prior = LA.diagm([1/σ^2 for (_, σ) in values(gaussian_priors)])
+            W_prior = LA.diagm([1/a.err^2 for a in values(gaussian_priors_)])
             W = zeros(N_y + N_priors, N_y + N_priors)
             W[1:N_y, 1:N_y] = W_
             W[N_y+1:end, N_y+1:end] = W_prior
@@ -682,13 +683,17 @@ function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
     # Χ² function for propagating error to fit parameters
     function χ²(p, d)
         model_ydata_extended = [model(xdata_, p)...,
-                                [p[i] for i in keys(gaussian_priors)]...]
+                                [p[i] for i in keys(gaussian_priors_)]...]
         return (model_ydata_extended - d)' * W * (model_ydata_extended - d)
     end
 
     # Extend ydata with prior expectation values
-    ydata_extended = [ydata_...,[AD.uwreal([μ, σ], "_prior$i")
-                                 for (i, (μ, σ)) in gaussian_priors]...]
+    if priors_keep_corr
+        ydata_extended = [ydata_..., values(gaussian_priors_)...]
+    else
+        ydata_extended = [ydata_..., [AD.uwreal([a.mean, a.err], "_prior$i")
+                                      for (i, a) in gaussian_priors_]...]
+    end
 
     # Observed χ² and number of degrees of freedom
     χ²_obs = χ²(fit_result_.param, AD.value.(ydata_extended))
@@ -697,8 +702,8 @@ function fit(model, xdata::AbstractArray, ydata::AbstractArray{AD.uwreal},
     # Compute fit error, and reduced χ² and p-value if gof (goodness of fit) is true
     if gof
         fitp, χ²_exp, p_value = fit_error(χ², fit_result_.param, ydata_extended,
-                                        W, gof=true, fit_type=fit_type, cov_matrix=C;
-                                        kargs...)
+                                          W, gof=true, fit_type=fit_type, cov_matrix=C;
+                                          kargs...)
 
         χ²_red = χ²_obs/χ²_exp
     else

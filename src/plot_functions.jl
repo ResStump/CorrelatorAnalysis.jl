@@ -167,7 +167,7 @@ plot_herrorline!(E::AD.uwreal; kargs...) =
     plot_herrorline!(CM.current_axis(), E; kargs...)
 
 function plot_model!(ax::CM.Axis, model, xdata_range::AbstractVector, parms::AbstractArray;
-                     errorband=false, n_points=10, color=:red, linestyle=:solid, kargs...)
+                     errorband=false, n_points=20, color=:red, linestyle=:solid, kargs...)
     if parms isa AbstractVector{AD.uwreal}
         err!.(parms)
         parms_values = AD.value.(parms)
