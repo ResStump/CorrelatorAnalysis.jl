@@ -1,7 +1,7 @@
 name = "CorrelatorAnalysis"
 uuid = "51dc7a32-bfba-47f5-8c7b-e9cc4ebff3e1"
 authors = ["Andres Stump <andres.stump@hu-berlin.de>"]
-version = "0.9.10"
+version = "0.9.11"
 
 [deps]
 ADerrors = "5e92007d-7bf1-471c-8ceb-4591b8b567a9"
@@ -25,5 +25,6 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
+ADerrors = "0.1.0"
 FiniteDifferences = "0.12.32"
 Measurements = "2.13.0"
