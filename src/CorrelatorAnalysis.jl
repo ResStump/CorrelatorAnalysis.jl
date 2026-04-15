@@ -36,6 +36,7 @@ export
     GEVP,
     markov_chain,
     overlaps_Z,
+    pencil_of_function,
     plot_autocorrelation,
     plot_autocorrelation!,
     plot_correlator,

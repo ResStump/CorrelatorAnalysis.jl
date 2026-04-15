@@ -175,6 +175,81 @@ function posdef_cov(a::AbstractVector{AD.uwreal}; correlation=false)
     return 0.5*(C + C')
 end
 
+"""
+    pencil_of_function(C, idx_pof; Δ=1)
+
+Constructs a Pencil of Functions correlation matrix.
+
+- `C`: Array of shape `(Nₜ, N_op, N_op)` with `Nₜ` time slices and `N_op` operators.
+- `idx_pof`: Vector of indices of the operators to be "penciled".
+- `Δ`: The time shift (default is 1). Can be an `Int` applied to all, 
+       or a `Vector{Int}` where `Δ[k]` applies to `idx_pof[k]`.
+
+Returns a matrix of shape `(Nₜ - 2*max(Δ), N_op + length(idx_pof), N_op + length(idx_pof))`.
+The shifted operator is placed immediately after its original counterpart.
+"""
+function pencil_of_function(Cₜ::AbstractArray{T, 3}, idx_pof::AbstractVector; Δ::Union{Int, AbstractVector{Int}}=1) where T
+    Nₜ, N_op, _ = size(Cₜ)
+    N_new = N_op + length(idx_pof)
+    
+    # Map each operator to its specific shift and find the maximum shift
+    if Δ isa AbstractVector
+        if length(Δ) != length(idx_pof)
+            throw(ArgumentError("Length of Δ vector must match length of idx_pof."))
+        end
+        Δ_dict = Dict(idx_pof[k] => Δ[k] for k in 1:length(idx_pof))
+        max_Δ = maximum(Δ)
+    else
+        Δ_dict = Dict(idx => Δ for idx in idx_pof)
+        max_Δ = Δ
+    end
+
+    Nₜ_new = Nₜ - 2 * max_Δ
+    
+    # Create a mapping for the new interleaved indices
+    map_orig = zeros(Int, N_op)
+    map_shifted = Dict{Int, Int}()
+    
+    current_idx = 1
+    for i in 1:N_op
+        map_orig[i] = current_idx
+        current_idx += 1
+        
+        # If this operator is penciled, the shifted version goes right after it
+        if i in idx_pof
+            map_shifted[i] = current_idx
+            current_idx += 1
+        end
+    end
+
+    # Initialize the expanded correlator matrix
+    Cₜ_pof = Array{T, 3}(undef, Nₜ_new, N_new, N_new)
+    
+    # Fill the matrix
+    for iₜ in 1:Nₜ_new, i in 1:N_op, j in 1:N_op                
+        # Both original
+        Cₜ_pof[iₜ, map_orig[i], map_orig[j]] = Cₜ[iₜ, i, j]
+        
+        # Both shifted
+        if i in idx_pof && j in idx_pof
+            Cₜ_pof[iₜ, map_shifted[i], map_shifted[j]] =
+                Cₜ[iₜ + Δ_dict[i] + Δ_dict[j], i, j]
+        end
+        
+        # Original at sink, shifted at source
+        if j in idx_pof
+            Cₜ_pof[iₜ, map_orig[i], map_shifted[j]] = Cₜ[iₜ + Δ_dict[j], i, j]
+        end
+        
+        # Shifted at sink, original at source
+        if i in idx_pof
+            Cₜ_pof[iₜ, map_shifted[i], map_orig[j]] = Cₜ[iₜ + Δ_dict[i], i, j]
+        end
+    end
+    
+    return Cₜ_pof
+end
+
 function eigvals_AD!(λ_t::AbstractVector{AD.uwreal}, Cₜ::AbstractArray{AD.uwreal, 3},
                      iₜ, i_t₀)
     N_op = size(Cₜ, 2)
