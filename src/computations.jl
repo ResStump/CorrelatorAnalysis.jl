@@ -186,7 +186,10 @@ function eigvals_AD!(λ_t::AbstractVector{AD.uwreal}, Cₜ::AbstractArray{AD.uwr
     # Propagate error to eigenvalues
     for i in 1:N_op
         der = real(conj(v[:, i])*transpose(v[:, i]))
-        λ_t[i] = AD.addobs(vec(Cₜ[iₜ, :, :]), vec(der), λ[i])
+        if !≈(imag(λ[i]), 0, atol=eps(Float64))
+            println("Warning: eigenvalue $i is not real for (i_t, i_t₀) = ($iₜ, $i_t₀).")
+        end
+        λ_t[i] = AD.addobs(vec(Cₜ[iₜ, :, :]), vec(der), real(λ[i]))
     end
 end
 
@@ -195,8 +198,9 @@ end
 
 Solve the Generalized Eigenvalue Problem (GEVP) `Cₜ(t)vₙ = λₙ(t, t₀)Cₜ(t₀)vₙ` and return the
 effective energy `Eₙ_eff(t, t₀) = log(λₙ(t, t₀)/λₙ(t+1, t₀))` as a vector of `AD.uwreal`
-vectors `E_eff`. The outer index is the eigenvalue index `ₙ` and the inner index is the time
-`t`. \\
+vectors `E_eff`. `Cₜ` is expected to have the size `(Nₜ, N_op, N_op)` where `Nₜ` is the
+number of time slices, `N_op` is the number of operators. The outer index of the returned
+matrix is the eigenvalue index `ₙ` and the inner index is the time `t`. \\
 The parameter `t₀` specifies `t₀` in `Eₙ_eff(t, t₀)`. The options are:
 - `:ceil_t_half` which sets `t₀ = ceil(t/2)` (default).
 - an `Int`. In that case `t₀` is always the same and the entries for `Eₙ_eff(t, t₀)` with
