@@ -255,12 +255,12 @@ end
     fit_result = CA.fit_plateau(aE_eff[3], plateau_range, fit_type=:correlated_posdef)
     aE2 = CA.err!(fit_result.param[1])
 
-    @test AD.value(aE0) ≈ 2.1524622389214803
-    @test AD.err(aE0) ≈ 0.0008896215919601967
-    @test AD.value(aE1) ≈ 2.17874053787349
-    @test AD.err(aE1) ≈ 0.0009186633907838645
-    @test AD.value(aE2) ≈ 2.1883420746340887
-    @test AD.err(aE2) ≈ 0.0008906508771061862
+    @test AD.value(aE0) ≈ 2.1524682627233105
+    @test AD.err(aE0) ≈ 0.0008895844248731472
+    @test AD.value(aE1) ≈ 2.1787329944629175
+    @test AD.err(aE1) ≈ 0.00091895320251099
+    @test AD.value(aE2) ≈ 2.188341998467619
+    @test AD.err(aE2) ≈ 0.0008906771664163751
 
     # Compute effective energy using t₀ = const method
     t₀ = 12

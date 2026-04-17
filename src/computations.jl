@@ -252,14 +252,14 @@ end
 
 function eigvals_AD!(λ_t::AbstractVector{AD.uwreal}, Cₜ::AbstractArray{AD.uwreal, 3},
                      iₜ, i_t₀)
-    N_op = size(Cₜ, 2)
+    N_eigvals = length(λ_t)
 
     # Compute eigenvectors (sorted in decreasing order of real part of eigenvalue)
     λ, v = LA.eigen(AD.value.(Cₜ[iₜ, :, :]), AD.value.(Cₜ[i_t₀, :, :]),
                     sortby=(λ->-real(λ)))
 
     # Propagate error to eigenvalues
-    for i in 1:N_op
+    for i in 1:N_eigvals
         der = real(conj(v[:, i])*transpose(v[:, i]))
         if !≈(imag(λ[i]), 0, atol=eps(Float64))
             println("Warning: eigenvalue $i is not real for (i_t, i_t₀) = ($iₜ, $i_t₀).")
@@ -269,7 +269,7 @@ function eigvals_AD!(λ_t::AbstractVector{AD.uwreal}, Cₜ::AbstractArray{AD.uwr
 end
 
 """
-    GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Union{Int, Symbol}=:ceil_t_half) -> E_eff::Vector{Vector{{AD.uwreal}}
+    GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀=:ceil_t_half) -> E_eff::Vector{Vector{AD.uwreal}}
 
 Solve the Generalized Eigenvalue Problem (GEVP) `Cₜ(t)vₙ = λₙ(t, t₀)Cₜ(t₀)vₙ` and return the
 effective energy `Eₙ_eff(t, t₀) = log(λₙ(t, t₀)/λₙ(t+1, t₀))` as a vector of `AD.uwreal`
@@ -279,63 +279,86 @@ matrix is the eigenvalue index `ₙ` and the inner index is the time `t`. \\
 The parameter `t₀` specifies `t₀` in `Eₙ_eff(t, t₀)`. The options are:
 - `:ceil_t_half` which sets `t₀ = ceil(t/2)` (default).
 - an `Int`. In that case `t₀` is always the same and the entries for `Eₙ_eff(t, t₀)` with
-    `t<t₀` are set to NaN.
+    `t₀ > t` are set to NaN.
+- a function `t₀(t)` returning an `Int`. In that case `t₀` may vary with `t`. Values with
+    `t₀(t) < 0` and `t₀(t) > t` are set to NaN.
+Use `N_eigvals` to specify maximum number of eigenvalues to compute (default is the number
+of operators).
 """
-function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Union{Int, Symbol}=:ceil_t_half)
+function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Int; N_eigvals=size(Cₜ, 2))
     # Get Nₜ and number of operators
     Nₜ, N_op, _ = size(Cₜ)
+    N_eigvals = min(N_eigvals, N_op)
 
-    if t₀ isa Int
-        if t₀ < 0 || t₀ >= Nₜ
-            throw(ArgumentError("t₀ must be in the range 0 <= t₀ < Nₜ."))
-        end
-
-        # Index of t₀
-        i_t₀ = t₀+1
-
-        λ_t = Vector{AD.uwreal}(undef, N_op)
-        λ = Array{AD.uwreal, 2}(undef, Nₜ, N_op)
-        for iₜ in 1:Nₜ
-            if iₜ < i_t₀
-                λ[iₜ, :] .= [AD.uwreal(NaN)]
-            else
-                # Compute eigenvalues
-                eigvals_AD!(@view(λ[iₜ, :]), Cₜ, iₜ, i_t₀)
-            end
-        end
-
-        E_eff = effective_energy.(eachcol(λ), :log)
-    elseif t₀ == :ceil_t_half
-        λ_t = Vector{AD.uwreal}(undef, N_op)
-        λ_tp1 = Vector{AD.uwreal}(undef, N_op)
-        E_eff = Array{AD.uwreal, 2}(undef, Nₜ, N_op)
-        for iₜ in 1:Nₜ-1
-            # Compute t₀ and its index
-            t₀ = ceil(Int, iₜ/2)
-            i_t₀ = t₀+1
-
-            # Compute eigenvalues
-            eigvals_AD!(λ_t, Cₜ, iₜ, i_t₀)
-            eigvals_AD!(λ_tp1, Cₜ, iₜ+1, i_t₀)
-
-            # Compute effective energy (set all nonpositive values to NaN)
-            ratio = λ_t./λ_tp1
-
-            for i in eachindex(ratio)
-                if ratio[i] ≤ 0
-                    ratio[i] = AD.uwreal(NaN)
-                end
-            end
-            E_eff[iₜ, :] = @. log(ratio)
-        end
-
-        E_eff[end, :] .= [AD.uwreal(NaN)]
-        E_eff = eachcol(E_eff)
-    else
-        throw(ArgumentError("unknown t₀. Use an integer or :ceil_t_half."))
+    if t₀ < 0 || t₀ >= Nₜ
+        throw(ArgumentError("t₀ must be in the range 0 <= t₀ < Nₜ."))
     end
-    
+
+    # Index of t₀
+    i_t₀ = t₀ + 1
+
+    λ = Array{AD.uwreal, 2}(undef, Nₜ, N_eigvals)
+    for iₜ in 1:Nₜ
+        if iₜ < i_t₀
+            λ[iₜ, :] .= [AD.uwreal(NaN)]
+        else
+            # Compute eigenvalues
+            eigvals_AD!(@view(λ[iₜ, :]), Cₜ, iₜ, i_t₀)
+        end
+    end
+
+    E_eff = effective_energy.(eachcol(λ), :log)
+
     return E_eff
+end
+
+function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Function; N_eigvals=size(Cₜ, 2))
+    # Get Nₜ and number of operators
+    Nₜ, N_op, _ = size(Cₜ)
+    N_eigvals = min(N_eigvals, N_op)
+
+    λ_t = Vector{AD.uwreal}(undef, N_eigvals)
+    λ_tp1 = Vector{AD.uwreal}(undef, N_eigvals)
+    E_eff = Array{AD.uwreal, 2}(undef, Nₜ, N_eigvals)
+
+    for iₜ in 1:Nₜ-1
+        t = iₜ - 1
+        t₀_t = t₀(t)
+        if !(t₀_t isa Integer)
+            throw(ArgumentError("t₀(t) must return an integer."))
+        end
+        if t₀_t < 0 || t₀_t > t
+            E_eff[iₜ, :] .= [AD.uwreal(NaN)]
+            continue
+        end
+
+        i_t₀ = t₀_t + 1
+
+        # Compute eigenvalues
+        eigvals_AD!(λ_t, Cₜ, iₜ, i_t₀)
+        eigvals_AD!(λ_tp1, Cₜ, iₜ+1, i_t₀)
+
+        # Compute effective energy (set all nonpositive values to NaN)
+        ratio = λ_t ./ λ_tp1
+        for i in eachindex(ratio)
+            if ratio[i] ≤ 0
+                ratio[i] = AD.uwreal(NaN)
+            end
+        end
+        E_eff[iₜ, :] = @. log(ratio)
+    end
+
+    E_eff[end, :] .= [AD.uwreal(NaN)]
+    return eachcol(E_eff)
+end
+
+function GEVP(Cₜ::AbstractArray{AD.uwreal, 3}, t₀::Symbol=:ceil_t_half;
+              N_eigvals=size(Cₜ, 2))
+    if t₀ == :ceil_t_half
+        return GEVP(Cₜ, t -> ceil(Int, t/2); N_eigvals=N_eigvals)
+    else
+        throw(ArgumentError("unknown t₀. Use an integer, a function, or :ceil_t_half."))
+    end
 end
 
 """
