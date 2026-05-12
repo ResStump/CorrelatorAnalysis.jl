@@ -2,7 +2,7 @@
     read_uwreal(filename; return_info=false) -> a::Union{AD.uwreal, AbstractArray{AD.uwreal} [, info::String]
 
 Read `AD.uwreal` objects from a BDIO file and return them as an array with the shape
-specified in the file. If `length(a)==1` return it as a single object. The window
+specified in the file. The window
 parameters are set in `parms.wpm` accordingly.
 If `return_info=true`, additionally return the `info` string containing the creation
 date and program versions.
@@ -87,9 +87,6 @@ function read_uwreal(filename; return_info=false)
 
     # Reshape array
     a = reshape(a, dims...)
-    if length(a) == 1
-        a = a[1]
-    end
 
     # Set window parameters
     wpm = reshape(wpm, 4, :)
