@@ -23,6 +23,7 @@ export
 
 # Functions
     add_mcid_to_parms!,
+    add_systematic_error,
     bootstrap_to_uwreal,
     cov,
     derivedobs_fd,

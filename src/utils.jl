@@ -159,3 +159,86 @@ function bootstrap_to_uwreal(mean, samples, mcid)
     samples = (samples .- Stats.mean(samples))*√length(samples) .+ mean
     return uwreal(samples, mcid, 1)
 end
+
+"""
+    add_systematic_error(a_pref, a_alt, α=0.5; label_corr="", labels_uncorr=nothing) -> Vector{AD.uwreal}
+
+Add a systematic uncertainty to a preferred set of observables `a_pref`, estimated from the
+difference to a alternative results `a_alt` (all are vectors of `AD.uwreal`). The
+correlation parameter `α` sets how correlated the systematic uncertainties are; it must
+satisfy `0 < α < 1` (default is 0.5).
+
+The optional string `label_corr` and array of strings `labels_uncorr` are used to label the correlated and uncorrelated systematic ensemble tags respectively.
+
+# Background
+
+Given a preferred result `a_pref[i]` and an alternative result `a_alt[i]` for each data
+point, the difference
+
+    Δx[i] = value(a_pref[i]) - value(a_alt[i])
+
+is used as an estimate of the systematic uncertainty at each point. The systematic
+covariance matrix is parametrised as:
+
+    cov_sys = α · diag(Δx)² + (1 - α) · Δx Δxᵀ
+
+where the parameter `α ∈ (0, 1)` controls the correlation structure:
+- `α → 1`: fully **uncorrelated** systematics (each point shifts independently)
+- `α → 0`: fully **correlated** systematics (all points shift together)
+
+# Implementation via ADerrors ensemble tags
+
+Rather than working with the covariance matrix explicitly, the systematic is injected
+directly as new `AD.uwreal` sources, so that all subsequent operations (fits, derived
+quantities, etc.) propagate the systematic automatically via automatic differentiation.
+
+The decomposition used is:
+
+    a_pref[i] + √(1-α) · Δx[i] · η_shared + √α · Δx[i] · η_i
+
+where `η_shared` is a single shared noise variable (one synthetic "configuration"),
+and `η_i` are independent noise variables per data point. This exactly reproduces
+`cov_sys` above:
+
+    Cov(i, j) = (1-α)·Δx[i]·Δx[j]   (from shared tag, i ≠ j)
+    Var(i)    = (1-α)·Δx[i]² + α·Δx[i]²  = Δx[i]²  (diagonal, as expected)
+
+# Notes
+- For a fully correlated systematic (`α → 0`), prefer a small but nonzero value
+  such as `α = 1e-6` rather than exactly `0` to avoid zero-variance uncorrelated
+  sources.
+"""
+function add_systematic_error(a_pref::AbstractVector{AD.uwreal},
+                              a_alt::AbstractVector{AD.uwreal}, α=0.5;
+                              label_corr="", labels_uncorr=nothing)
+    n = length(a_pref)
+    if length(a_alt) != n
+        throw(ArgumentError("a_pref and a_alt must have the same length, got $(n) and "*
+                            "$(length(a_alt))."))
+    end
+    if !(0.0 < α < 1.0)
+        throw(ArgumentError("α must satisfy 0 < α < 1, got α = $α."))
+    end    
+    if isnothing(labels_uncorr)
+        labels_uncorr = ["_$i" for i in 1:n]
+    else
+        if length(labels_uncorr) != n
+            throw(ArgumentError("labels_uncorr must have the same length as a_pref, got " *
+                                "$(length(labels_uncorr)) and $(n)."))
+        end
+        labels_uncorr = "_" .* labels_uncorr
+    end
+
+    # Systematic magnitude: use only the mean of the difference
+    Δa = AD.value.(a_pref .- a_alt)
+
+    # Correlated part: all points share one ensemble tag
+    sys_corr = [AD.uwreal([0.0, sqrt(1.0 - α) * Δa[i]], "sys_corr$(label_corr)")
+                for i in 1:n]
+
+    # Uncorrelated part: each point gets its own independent ensemble tag
+    tags_uncorr = ["sys_uncorr$(label_corr)_$(labels_uncorr[i])" for i in 1:n]
+    sys_uncorr = [AD.uwreal([0.0, sqrt(α) * Δa[i]], tags_uncorr[i]) for i in 1:n]
+
+    return a_pref .+ sys_corr .+ sys_uncorr
+end
