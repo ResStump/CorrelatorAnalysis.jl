@@ -166,7 +166,7 @@ end
 Add a systematic uncertainty to a preferred set of observables `a_pref`, estimated from the
 difference to a alternative results `a_alt` (all are vectors of `AD.uwreal`). The
 correlation parameter `α` sets how correlated the systematic uncertainties are; it must
-satisfy `0 < α < 1` (default is 0.5).
+satisfy `0 < α <= 1` (default is 0.5).
 
 The optional string `label_corr` and array of strings `labels_uncorr` are used to label the correlated and uncorrelated systematic ensemble tags respectively.
 
@@ -216,8 +216,8 @@ function add_systematic_error(a_pref::AbstractVector{AD.uwreal},
         throw(ArgumentError("a_pref and a_alt must have the same length, got $(n) and "*
                             "$(length(a_alt))."))
     end
-    if !(0.0 < α < 1.0)
-        throw(ArgumentError("α must satisfy 0 < α < 1, got α = $α."))
+    if !(0.0 < α <= 1.0)
+        throw(ArgumentError("α must satisfy 0 < α <= 1, got α = $α."))
     end    
     if isnothing(labels_uncorr)
         labels_uncorr = ["_$i" for i in 1:n]
@@ -237,7 +237,7 @@ function add_systematic_error(a_pref::AbstractVector{AD.uwreal},
                 for i in 1:n]
 
     # Uncorrelated part: each point gets its own independent ensemble tag
-    tags_uncorr = ["sys_uncorr$(label_corr)_$(labels_uncorr[i])" for i in 1:n]
+    tags_uncorr = ["sys_uncorr$(label_corr)$(labels_uncorr[i])" for i in 1:n]
     sys_uncorr = [AD.uwreal([0.0, sqrt(α) * Δa[i]], tags_uncorr[i]) for i in 1:n]
 
     return a_pref .+ sys_corr .+ sys_uncorr
